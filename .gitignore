@@ -1,0 +1,9 @@
+*.swf
+*.fla
+*.xcodeproj
+.DS_Store
+build
+*.1
+*.o
+*.dot
+*.gch
