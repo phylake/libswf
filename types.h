@@ -9,7 +9,8 @@ namespace swf {
 
 class TypeBase {
 public:
-	static unsigned int getN32Bits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+	static unsigned int getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+	static   signed int getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
 	
 	virtual void fromSWF( char *& ptr) = 0;
 	
@@ -35,7 +36,8 @@ class U16 : public TypeBase {
 	unsigned short int value;
 public:
 	void fromSWF( char *& ptr );
-	unsigned short int toBE();
+	double toFixed8();
+	unsigned short int getValue();
 };
 
 //-----------------------------------------
@@ -45,7 +47,8 @@ class U32 : public TypeBase {
 	unsigned int value;
 public:
 	void fromSWF( char *& ptr );
-	unsigned int toBE();
+	double toFixed16();
+	unsigned int getValue();
 };
 	
 //-----------------------------------------
@@ -54,9 +57,8 @@ public:
 class Twip {
 	
 public:
-	unsigned int value;
-	//void fromSWF( char *& ptr );
-	unsigned int toBE();
+	signed int value;
+	signed int toPX();
 };
 
 //-----------------------------------------

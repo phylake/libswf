@@ -85,9 +85,13 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//swf::SWFHeader sh;
 	//sh.fromSWF((char *)inBuf);
 	//78 00 05 5f 00 00 0f a0 00 00 0c 01 00 44 11 08
-	//011110000000000000000101010111110000000000000000	
+	//01111
+	//000000000000000
+	//010101011111000
+	//000000000000000
+	//001111101000000
 	
-	unsigned int OUT_SIZE = swf.header.fileLength().toBE();
+	unsigned int OUT_SIZE = swf.header.fileLength().getValue();
 	unsigned char outBuf[OUT_SIZE - uncompressedBytes];//known uncompressed size - already uncompressed bytes
 	
 	if ( swf.header.compressed() ) {
@@ -120,11 +124,13 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 		printf("\n\noutBuf\n");
 		dumpBuf(outBuf, OUT_SIZE);
 		
-		swf.continueWith((char *)outBuf);
+		temp = temp = (char *)&outBuf[0];
+		//swf.continueWith((char *)outBuf);
 	} else {
-		swf.continueWith();
+		//swf.continueWith();
 	}
-		
+	swf.continueWith(temp);
+	
 	finalBuffer = (char *)outBuf;
 	finalBufferLength = &OUT_SIZE;
 	return 0;
@@ -154,45 +160,9 @@ static unsigned int rotateBits(unsigned int value, int n) {
 	return result;
 }
 
-unsigned int getN32Bits(char * ptr, unsigned int n, unsigned int startAt = 0) {
-	unsigned int ret = 0;
-	unsigned int i = 0;
-	unsigned int pos;
-	unsigned int t;
-	unsigned int scale;
-	
-	//pointer adjustment
-	ptr += (unsigned int) floor(startAt / 8);
-	
-	//scaling
-	startAt = startAt % 8;
-	n = n % 32;
-	
-	do {
-		scale = (i + startAt) % 8;
-		
-		/* shift sizeof(char) * 8 - 1 scaled by i plus a starting position */
-		pos = 8 - 1 - scale;
-		if( i > 0 && scale == 0 )
-		{
-			ptr++;
-		}
-		
-		t = *ptr >> pos;
-		
-		t &= 1;
-		printf("%i", t);
-		
-		ret <<= 1;
-		ret |= t & 1;
-	} while (++i < n);
-	
-	return ret;
-}
-
 void test() {
 	char ar[9];
-	ar[0] = 0x78;
+	ar[0] = 0x7C;
 	ar[1] = 0x00;
 	ar[2] = 0x05;
 	ar[3] = 0x5f;
@@ -201,14 +171,6 @@ void test() {
 	ar[6] = 0x0f;
 	ar[7] = 0xa0;
 	ar[8] = 0x00;
-	
-	
-	unsigned int ret;
-	ret = getN32Bits(&ar[0], 5, 0);printf("\n");
-	ret = getN32Bits(&ar[0], 15, 5);printf("\n");
-	ret = getN32Bits(&ar[0], 15, 20);printf("\n");
-	ret = getN32Bits(&ar[0], 15, 35);printf("\n");
-	ret = getN32Bits(&ar[0], 15, 50);printf("\n");
 }
 
 int main (int argc, char * const argv[]) {

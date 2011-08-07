@@ -1,6 +1,6 @@
 #include "types.h"
 
-unsigned int swf::TypeBase::getN32Bits(unsigned char * ptr, unsigned int n, unsigned int startAt = 0) {
+unsigned int swf::TypeBase::getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt = 0) {
 	unsigned int ret = 0;
 	unsigned int i = 0;
 	unsigned int pos;
@@ -41,6 +41,17 @@ unsigned int swf::TypeBase::getN32Bits(unsigned char * ptr, unsigned int n, unsi
 	return ret;
 }
 
+signed int swf::TypeBase::getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt = 0) {
+	unsigned int ret = TypeBase::getUBits(ptr, n, startAt);
+	
+	if ( ret & (1<<(n-1)) )
+	{//msb is 1
+		ret |= ((~0) << n);
+	}
+	
+	return ret;
+}
+
 //-----------------------------------------
 //                   U8
 //-----------------------------------------
@@ -64,8 +75,19 @@ void swf::U16::fromSWF( char *& ptr ) {
 	ptr += 2;
 }
 
-unsigned short int swf::U16::toBE() {
+unsigned short int swf::U16::getValue() {
 	return value;
+}
+
+double swf::U16::toFixed8() {
+	double decimal = 0;
+	
+	if (value && 0x00ff)
+	{
+		decimal = (double)(value & 0x00ff) / pow(10, 3);
+	}
+	
+	return ((value & 0xff00) >> 8) + decimal;
 }
 
 //-----------------------------------------
@@ -81,13 +103,27 @@ void swf::U32::fromSWF( char *& ptr ) {
 	ptr += 4;
 }
 
-unsigned int swf::U32::toBE() {
+unsigned int swf::U32::getValue() {
 	return value;
+}
+
+double swf::U32::toFixed16() {
+	double decimal = 0;
+	
+	if (value && 0x0000ffff)
+	{
+		decimal = (double)(value & 0x0000ffff) / pow(10, 5);
+	}
+	
+	return ((value & 0xffff0000) >> 16) + decimal;
 }
 
 //-----------------------------------------
 //                   Twip
 //-----------------------------------------
+signed int swf::Twip::toPX() {
+	return value/20;
+}
 
 //-----------------------------------------
 //                   RECT
@@ -95,11 +131,11 @@ unsigned int swf::U32::toBE() {
 void swf::RECT::fromSWF( char *& ptr ) {
 	int i = 0;
 	
-	nBits      = TypeBase::getN32Bits((unsigned char *)ptr, 5);
-	xMin.value = TypeBase::getN32Bits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	xMax.value = TypeBase::getN32Bits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	yMin.value = TypeBase::getN32Bits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	yMax.value = TypeBase::getN32Bits((unsigned char *)ptr, nBits, 5 + nBits * i++);
+	nBits      = TypeBase::getUBits((unsigned char *)ptr, 5);
+	xMin.value = TypeBase::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
+	xMax.value = TypeBase::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
+	yMin.value = TypeBase::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
+	yMax.value = TypeBase::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
 	
 	double shift = ceil( (5 + (double)(nBits * i)) / 8);
 	ptr += (unsigned int)shift;
@@ -107,10 +143,10 @@ void swf::RECT::fromSWF( char *& ptr ) {
 	#ifdef DEBUG
 	printf("i: %i\n", i);
 	printf("nBits: %i\n", nBits);
-	printf("xMin: %i\n", xMin.value/20);
-	printf("xMax: %i\n", xMax.value/20);
-	printf("yMin: %i\n", yMin.value/20);
-	printf("yMax: %i\n", yMax.value/20);
+	printf("xMin: %i\n", xMin.toPX());
+	printf("xMax: %i\n", xMax.toPX());
+	printf("yMin: %i\n", yMin.toPX());
+	printf("yMax: %i\n", yMax.toPX());
 	printf("shift %f\n", shift);
 	#endif
 }

@@ -24,7 +24,7 @@ class SWFHeader : public TagBase {
 	U16 _frameCount;
 public:
 	void fromSWF(char * stream);
-	void continueWith(char * stream = 0);
+	void continueWith(char *& stream);
 	
 	//
 	//accessors
