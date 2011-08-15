@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <vector.h>
+#include "swfamf.h"
 #include "math.h"
 
 namespace swf
@@ -127,9 +128,12 @@ namespace swf
 	//                AbstractTag
 	//-----------------------------------------
 	class AbstractTag : public AbstractBase {
+    private:
+        //AbstractTag(const AbstractTag&);
+        AbstractTag& operator=(const AbstractTag&);
 	protected:
-		AbstractTag *next;
-		AbstractTag *prev;
+		//AbstractTag *next;
+		//AbstractTag *prev;
 		char * _buffer;
 	public:
 		RecordHeader * recordHeader;
@@ -157,6 +161,29 @@ namespace swf
 		bool compressed();
 		U32	fileLength();
 		RECT frameSize();
+	};
+    
+    //-----------------------------------------
+	//             1 ShowFrame
+	//-----------------------------------------
+	class ShowFrame : public AbstractTag {
+	public:
+		virtual void fromSWF(char *& stream);
+		virtual ~ShowFrame();
+	};
+    
+    //-----------------------------------------
+	//             69 FileAttributes
+	//-----------------------------------------
+	class FileAttributes : public AbstractTag {
+		bool _useDirectBlit;
+        bool _useGPU;
+        bool _hasMetadata;
+        bool _isAS3;
+        bool _useNetwork;
+	public:
+		virtual void fromSWF(char *& stream);
+		virtual ~FileAttributes();
 	};
 	
 	//-----------------------------------------
