@@ -161,24 +161,59 @@ static unsigned int rotateBits(unsigned int value, int n) {
 }
 
 void test() {
-	char ar[9];
-	ar[0] = 0x7C;
-	ar[1] = 0x00;
-	ar[2] = 0x05;
-	ar[3] = 0x5f;
-	ar[4] = 0x00;
-	ar[5] = 0x00;
-	ar[6] = 0x0f;
-	ar[7] = 0xa0;
-	ar[8] = 0x00;
+	/*
+	 1-5-10
+	 1-8-23
+	 */
+	
+	//1: 0x3c00
+	//-2: 0xc000
+	
+	unsigned ss = sizeof(unsigned short) * 8;
+	unsigned sf = sizeof(float) * 8;
+	
+	//unsigned short value = 0x3555;
+	unsigned short value = 0x3c00;
+	
+	if ( !(value & 0x3ff) ) return;
+	
+	int s = (value << 16) & 0x80000000;
+	int e = (value >> 10) & 0x1f;
+	int m = value & 0x3ff;
+	
+	if( 0 ) {
+		int h = 0;
+		while( !(m & 0x400) ) {
+			m <<= 1;
+			h++;
+		}
+		m &= 0x3ff;
+		e -= h;
+		e += 0x6f;
+	} else {
+		e += 112;
+	}
+
+	
+	unsigned ret = 0;
+	//ret |= s;
+	ret = (value & 0x8000 ) << 16;
+	ret |= e << 16;
+	ret |= m << 13;
+	
+	float f = *(float*)&ret;
+	if( f ) {
+	}
 }
 
 int main (int argc, char * const argv[]) {
-	char * buf;
+	//test(); return 0;
+	
+    char * buf;
 	unsigned int * bufLen;
 	
 	startWithFile(argv[0], buf, bufLen);
-	Parser::fsmParseSWF((char *)buf, *bufLen);
+	//Parser::fsmParseSWF((char *)buf, *bufLen);
 	
 	return 0;
 }

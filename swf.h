@@ -2,6 +2,7 @@
 #define SWF_H
 
 #include <stdio.h>
+#include <vector.h>
 #include "math.h"
 
 namespace swf
@@ -32,6 +33,8 @@ namespace swf
 	//                AbstractData
 	//-----------------------------------------
 	class AbstractData : public AbstractBase {
+    protected:
+        bool valueSet;
 	public:
 		static unsigned int getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
 		static   signed int getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
@@ -67,11 +70,13 @@ namespace swf
 	class U32 : public AbstractData {
 		unsigned int value;
 	public:
-		U32(unsigned value = 0);
-		virtual void fromSWF( char *& ptr );
-		double toFixed16();
+        virtual void fromSWF( char *& ptr );
+		
+        double toFixed16();
 		float toFloat();
+        
 		unsigned int getValue();
+        void setValue(unsigned int value);
 	};
 	
 	//-----------------------------------------
@@ -127,7 +132,7 @@ namespace swf
 		AbstractTag *prev;
 		char * _buffer;
 	public:
-		RecordHeader recordHeader;
+		RecordHeader * recordHeader;
 		virtual ~AbstractTag() = 0;
 	};
 	
