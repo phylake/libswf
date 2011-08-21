@@ -1,14 +1,6 @@
 #include "swf.h"
 
-//-----------------------------------------
-//                 AbstractBase
-//-----------------------------------------
-swf::AbstractBase::~AbstractBase() {}
-
-//-----------------------------------------
-//                 AbstractData
-//-----------------------------------------
-unsigned int swf::AbstractData::getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt = 0) {
+unsigned int swf::getUBits(unsigned char * buf, unsigned int n, unsigned int startAt = 0) {
 	unsigned int ret = 0;
 	unsigned int i = 0;
 	unsigned int pos;
@@ -16,7 +8,7 @@ unsigned int swf::AbstractData::getUBits(unsigned char * ptr, unsigned int n, un
 	unsigned int scale;
 	
 	//pointer adjustment
-	ptr += (unsigned int) floor(startAt / 8);
+	buf += (unsigned int) floor(startAt / 8);
 	
 	//scaling
 	startAt = startAt % 8;
@@ -29,10 +21,10 @@ unsigned int swf::AbstractData::getUBits(unsigned char * ptr, unsigned int n, un
 		pos = 8 - 1 - scale;
 		if( i > 0 && scale == 0 )
 		{
-			ptr++;
+			buf++;
 		}
 		
-		t = *ptr >> pos;
+		t = *buf >> pos;
 		
 #ifdef DEBUG
 		printf("%i", t & 1);
@@ -49,8 +41,12 @@ unsigned int swf::AbstractData::getUBits(unsigned char * ptr, unsigned int n, un
 	return ret;
 }
 
-signed int swf::AbstractData::getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt = 0) {
-	unsigned int ret = AbstractData::getUBits(ptr, n, startAt);
+unsigned int swf::getUBits(char * buf, unsigned int n, unsigned int startAt = 0) {
+    return getUBits((unsigned char *)buf, n, startAt);
+}
+
+signed int swf::getSBits(unsigned char * buf, unsigned int n, unsigned int startAt = 0) {
+	unsigned int ret = getUBits(buf, n, startAt);
 	
 	if ( ret & (1<<(n-1)) )
 	{//msb is 1
@@ -60,14 +56,27 @@ signed int swf::AbstractData::getSBits(unsigned char * ptr, unsigned int n, unsi
 	return ret;
 }
 
+signed int swf::getSBits(char * buf, unsigned int n, unsigned int startAt = 0) {
+    return getSBits((unsigned char *)buf, n, startAt);
+}
+
+
+//-----------------------------------------
+//                 AbstractBase
+//-----------------------------------------
+swf::AbstractBase::~AbstractBase() {}
+
+//-----------------------------------------
+//                 AbstractData
+//-----------------------------------------
 swf::AbstractData::~AbstractData() {}
 
 //-----------------------------------------
 //                   U8
 //-----------------------------------------
-void swf::U8::fromSWF( char *& ptr ) {
-	value = ptr[0] & 0x000000ff;
-	ptr++;
+void swf::U8::fromSWF( char *& buf ) {
+	value = buf[0] & 0x000000ff;
+	buf++;
 }
 
 unsigned char swf::U8::toBE() {
@@ -77,12 +86,12 @@ unsigned char swf::U8::toBE() {
 //-----------------------------------------
 //                   U16
 //-----------------------------------------
-void swf::U16::fromSWF( char *& ptr ) {
+void swf::U16::fromSWF( char *& buf ) {
 	value = 
-	ptr[0] <<  0 & 0x000000ff |
-	ptr[1] <<  8 & 0x0000ff00
+        buf[0] <<  0 & 0x000000ff |
+        buf[1] <<  8 & 0x0000ff00
 	;
-	ptr += 2;
+	buf += 2;
 }
 
 unsigned short int swf::U16::getValue() {
@@ -114,16 +123,14 @@ float swf::U16::toFloat() {
 //-----------------------------------------
 //                   U32
 //-----------------------------------------
-void swf::U32::fromSWF( char *& ptr ) {
-    valueSet = true;
-    
-	value = 
-        ptr[0] <<  0 & 0x000000ff |
-        ptr[1] <<  8 & 0x0000ff00 |
-        ptr[2] << 16 & 0x00ff0000 |
-        ptr[3] << 24 & 0xff000000
+void swf::U32::fromSWF( char *& buf ) {
+    value = 
+        buf[0] <<  0 & 0x000000ff |
+        buf[1] <<  8 & 0x0000ff00 |
+        buf[2] << 16 & 0x00ff0000 |
+        buf[3] << 24 & 0xff000000
 	;
-	ptr += 4;
+	buf += 4;
 }
 
 unsigned int swf::U32::getValue() {
@@ -131,9 +138,7 @@ unsigned int swf::U32::getValue() {
 }
 
 void swf::U32::setValue(unsigned int value) {
-    if ( !valueSet ) {
-		(*this).value = value;
-	}
+    (*this).value = value;
 }
 
 double swf::U32::toFixed16() {
@@ -152,6 +157,14 @@ float swf::U32::toFloat() {
 }
 
 //-----------------------------------------
+//                 String
+//-----------------------------------------
+void swf::String::fromSWF( char *& buf ) {
+    value.assign(buf);
+    buf += value.length();
+}
+
+//-----------------------------------------
 //                   Twip
 //-----------------------------------------
 signed int swf::Twip::toPX() {
@@ -159,19 +172,32 @@ signed int swf::Twip::toPX() {
 }
 
 //-----------------------------------------
+//                   RGB
+//-----------------------------------------
+swf::RGB::RGB( int type ) {
+    (*this).type = type;
+}
+
+void swf::RGB::fromSWF( char *& buf ) {
+    value.fromSWF(buf);
+    
+    if( type == 0 ) buf--;//only 3 bytes were relevant
+}
+
+//-----------------------------------------
 //                   RECT
 //-----------------------------------------
-void swf::RECT::fromSWF( char *& ptr ) {
+void swf::RECT::fromSWF( char *& buf ) {
 	int i = 0;
 	
-	nBits      = AbstractData::getUBits((unsigned char *)ptr, 5);
-	xMin.value = AbstractData::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	xMax.value = AbstractData::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	yMin.value = AbstractData::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
-	yMax.value = AbstractData::getSBits((unsigned char *)ptr, nBits, 5 + nBits * i++);
+	nBits      = getUBits(buf, 5);
+	xMin.value = getSBits(buf, nBits, 5 + nBits * i++);
+	xMax.value = getSBits(buf, nBits, 5 + nBits * i++);
+	yMin.value = getSBits(buf, nBits, 5 + nBits * i++);
+	yMax.value = getSBits(buf, nBits, 5 + nBits * i++);
 	
 	double shift = ceil( (5 + (double)(nBits * i)) / 8);
-	ptr += (unsigned int)shift;
+	buf += (unsigned int)shift;
 	
 #ifdef DEBUG
 	printf("i: %i\n", i);
@@ -189,10 +215,153 @@ unsigned int swf::RECT::toBE() {
 }
 
 //-----------------------------------------
+//                   MATRIX
+//-----------------------------------------
+void swf::MATRIX::fromSWF(char *& buf) {
+    int i;
+    unsigned offset = 0;
+    signed sTemp;
+    
+    hasScale = *buf & 0x80;
+    hasScale = getUBits(buf, 1, offset);
+    if ( hasScale ) {
+        i = 0;
+        
+        nScaleBits = (*buf >> 2) & 0x1f;
+        offset += 6;//HasScale UB[1] + NScaleBits UB[5]
+        
+        sTemp = getSBits(buf, nScaleBits, offset + nScaleBits * i++);
+        scaleX.setValue( sTemp );
+        
+        sTemp = getSBits(buf, nScaleBits, offset + nScaleBits * i++);
+        scaleY.setValue( sTemp );
+        
+        offset += nScaleBits * i;
+    }
+    
+    hasRotate = getUBits(buf, 1, offset);
+    if ( hasRotate ) {
+        i = 0;
+        
+        nRotateBits = *buf & 0x7c;
+        offset += 6;//HasRotate UB[1] + NRotateBits UB[5]
+        
+        sTemp= getSBits(buf, nRotateBits, offset + nRotateBits * i++);
+        rotateSkew0.setValue( sTemp );
+        
+        sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
+        rotateSkew1.setValue( sTemp );
+    }
+    
+}
+
+//-----------------------------------------
+//                   CXFORM
+//-----------------------------------------
+void swf::CXFORM::fromSWF(char *& buf) {
+    int i = 0;
+    hasAddTerms  = getUBits(buf, 1, i++);
+    hasMultTerms = getUBits(buf, 1, i++);
+    nBits        = getUBits(buf, 4, i++);
+    
+    i = 6;
+    if( hasMultTerms ) {
+        rm = getUBits(buf, 4, i);
+        i += nBits;
+        gm = getUBits(buf, 4, i);
+        i += nBits;
+        bm = getUBits(buf, 4, i);
+        i += nBits;
+    }
+    
+    if( hasAddTerms ) {
+        ra = getUBits(buf, 4, i);
+        i += nBits;
+        ga = getUBits(buf, 4, i);
+        i += nBits;
+        ba = getUBits(buf, 4, i);
+        i += nBits;
+    }
+    
+    buf += (i / 8);
+}
+
+//-----------------------------------------
+//              CXFORMWITHALPHA
+//-----------------------------------------
+void swf::CXFORMWITHALPHA::fromSWF(char *& buf) {
+    int i = 0;
+    hasAddTerms  = getUBits(buf, 1, i++);
+    hasMultTerms = getUBits(buf, 1, i++);
+    nBits        = getUBits(buf, 4, i++);
+    
+    i = 6;
+    if( hasMultTerms ) {
+        rm = getUBits(buf, nBits, i);
+        i += nBits;
+        gm = getUBits(buf, nBits, i);
+        i += nBits;
+        bm = getUBits(buf, nBits, i);
+        i += nBits;
+        am = getUBits(buf, nBits, i);
+        i += nBits;
+    }
+    
+    if( hasAddTerms ) {
+        ra = getUBits(buf, nBits, i);
+        i += nBits;
+        ga = getUBits(buf, nBits, i);
+        i += nBits;
+        ba = getUBits(buf, nBits, i);
+        i += nBits;
+        aa = getUBits(buf, nBits, i);
+        i += nBits;
+    }
+    
+    buf += (i / 8);
+}
+
+//-----------------------------------------
+//              ActionRecord
+//-----------------------------------------
+void swf::ActionRecord::fromSWF( char *& buf ) {
+}
+
+//-----------------------------------------
+//              ClipEventFlags
+//-----------------------------------------
+void swf::ClipEventFlags::fromSWF( char *& buf ) {
+}
+
+//-----------------------------------------
+//              ClipActionRecord
+//-----------------------------------------
+void swf::ClipActionRecord::fromSWF( char *& buf ) {
+    eventFlags.fromSWF(buf);
+    size.fromSWF(buf);
+    keyCode.fromSWF(buf);
+    //TODO actions vector
+}
+
+//-----------------------------------------
+//              ClipActions
+//-----------------------------------------
+void swf::ClipActions::fromSWF( char *& buf ) {
+    reserved.fromSWF(buf);
+    allEventFlags.fromSWF(buf);
+    
+    //TODO records vector
+    
+    //TODO 5 or 6?
+    //endFlag5.fromSWF(buf);
+    //endFlag6.fromSWF(buf);
+}
+
+//-----------------------------------------
 //                RecordHeader
 //-----------------------------------------
-void swf::RecordHeader::fromSWF( char *& stream ) {
-	tagCodeAndLength.fromSWF(stream);
+void swf::RecordHeader::fromSWF( char *& buf ) {
+	tagCodeAndLength.fromSWF(buf);
 	
 	tag = (tagCodeAndLength.getValue() >> 6) & 0x3ff;
 	
@@ -204,7 +373,7 @@ void swf::RecordHeader::fromSWF( char *& stream ) {
     unsigned int shortLen = tagCodeAndLength.getValue() & 0x3f;
     if ( shortLen == 0x3f ) {
 		isShort = false;
-		tagLength.fromSWF( stream );
+		tagLength.fromSWF( buf );
 	} else {
 		isShort = true;
         tagLength.setValue( shortLen );
@@ -227,18 +396,18 @@ swf::AbstractTag::~AbstractTag() {}
 //-----------------------------------------
 //                SWFHeader
 //-----------------------------------------
-void swf::SWFHeader::fromSWF( char *& stream) {
-	_compressed = stream[0] == 'C';
+void swf::SWFHeader::fromSWF( char *& buf) {
+	_compressed = buf[0] == 'C';
 	
-	stream += 3;//skip 'W' and 'F'
-	_version.fromSWF(stream);
-	_fileLength.fromSWF(stream);
+	buf += 3;//skip 'W' and 'F'
+	_version.fromSWF(buf);
+	_fileLength.fromSWF(buf);
 }
 
-void swf::SWFHeader::continueWith(char *& stream) {
-	_frameSize.fromSWF(stream);
-	_frameRate.fromSWF(stream);
-	_frameCount.fromSWF(stream);
+void swf::SWFHeader::continueWith(char *& buf) {
+	_frameSize.fromSWF(buf);
+	_frameRate.fromSWF(buf);
+	_frameCount.fromSWF(buf);
 	
 	#ifdef DEBUG
     printf("SWFHeader\n");
@@ -247,8 +416,6 @@ void swf::SWFHeader::continueWith(char *& stream) {
 	printf("\t%i frameCount\n", _frameCount.getValue());
 	#endif
 }
-
-swf::SWFHeader::~SWFHeader() {}
 
 swf::U32 swf::SWFHeader::fileLength() {
 	return _fileLength;
@@ -259,18 +426,61 @@ bool swf::SWFHeader::compressed() {
 }
 
 //-----------------------------------------
-//              FileAttributes
+//             1 ShowFrame
 //-----------------------------------------
-swf::FileAttributes::~FileAttributes() {}
+void swf::ShowFrame::fromSWF(char *& buf) {
+#ifdef DEBUG
+    printf(" 1 ShowFrame\n");
+#endif
+}
 
-void swf::FileAttributes::fromSWF(char *& stream) {
-    _useDirectBlit = *stream & 0x40;
-    _useGPU        = *stream & 0x20;
-    _hasMetadata   = *stream & 0x10;
-    _isAS3         = *stream & 0x08;
-    _useNetwork    = *stream & 0x01;
+//-----------------------------------------
+//             9 SetBackgroundColor
+//-----------------------------------------
+void swf::SetBackgroundColor::fromSWF(char *& buf) {
+    color.fromSWF(buf);
     
-    stream += 4;
+#ifdef DEBUG
+    printf(" 9 SetBackgroundColor\n");
+#endif
+
+}
+
+//-----------------------------------------
+//             26 PlaceObject2
+//-----------------------------------------
+void swf::PlaceObject2::fromSWF(char *& buf) {
+    int i = 0;
+    hasClipActions    = getUBits(buf, 1, i++);
+    hasClipDepth      = getUBits(buf, 1, i++);
+    hasName           = getUBits(buf, 1, i++);
+    hasRatio          = getUBits(buf, 1, i++);
+    hasColorTransform = getUBits(buf, 1, i++);
+    hasMatrix         = getUBits(buf, 1, i++);
+    hasCharacter      = getUBits(buf, 1, i++);
+    moves             = getUBits(buf, 1, i++);
+    
+    depth.fromSWF(buf);
+    if( hasCharacter ) characterId.fromSWF(buf);
+    if( hasMatrix ) matrix.fromSWF(buf);
+    if( hasColorTransform ) colorTransform.fromSWF(buf);
+    if( hasRatio ) ratio.fromSWF(buf);
+    if( hasName ) name.fromSWF(buf);
+    if( hasClipDepth ) clipDepth.fromSWF(buf);
+    if( hasClipActions ) clipActions.fromSWF(buf);
+}
+
+//-----------------------------------------
+//             69 FileAttributes
+//-----------------------------------------
+void swf::FileAttributes::fromSWF(char *& buf) {
+    _useDirectBlit = *buf & 0x40;
+    _useGPU        = *buf & 0x20;
+    _hasMetadata   = *buf & 0x10;
+    _isAS3         = *buf & 0x08;
+    _useNetwork    = *buf & 0x01;
+    
+    buf += 4;
     
     #ifdef DEBUG
     printf("69 FileAttributes\n");
@@ -285,15 +495,15 @@ void swf::FileAttributes::fromSWF(char *& stream) {
 //-----------------------------------------
 //                  SWF
 //-----------------------------------------
-void swf::SWF::fromSWF(char *& stream) {
-	_buffer = &stream;
-	header.fromSWF(stream);
+void swf::SWF::fromSWF(char *& buf) {
+	_buffer = &buf;
+	header.fromSWF(buf);
 }
 
-void swf::SWF::continueWith(char *& stream) {
-	_buffer = &stream;
+void swf::SWF::continueWith(char *& buf) {
+	_buffer = &buf;
 	//(*_buffer) += 4;//want to do this but outBuf is cropped at the moment
-	header.continueWith(stream);
+	header.continueWith(buf);
     
     std::vector<RecordHeader> vrh;
     RecordHeader * rh;
@@ -303,275 +513,286 @@ void swf::SWF::continueWith(char *& stream) {
     short tv;
     do {
         rh = new RecordHeader();
-        rh->fromSWF(stream);
+        rh->fromSWF(buf);
         
-        //printf("tag %i\n", t->type());
         tv = rh->type();
         switch (tv) {
             case 0:
                 printf("%2i End\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 1:
-                printf("%2i ShowFrame\n", tv);
-                stream += rh->length();
+                //printf("%2i ShowFrame\n", tv);
+                //buf += rh->length();
+                
+                t = new ShowFrame;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 2:
                 printf("%2i DefineShape\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 4:
                 printf("%2i PlaceObject\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 5:
                 printf("%2i RemoveObject\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 6:
                 printf("%2i DefineBits\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 7:
                 printf("%2i DefineButton\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 8:
                 printf("%2i JPEGTables\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 9:
-                printf("%2i SetBackgroundColor\n", tv);
-                stream += rh->length();
+                //printf("%2i SetBackgroundColor\n", tv);
+                //buf += rh->length();
+                
+                t = new SetBackgroundColor;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 10:
                 printf("%i DefineFont\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 11:
                 printf("%i DefineText\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 12:
                 printf("%i DoAction\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 13:
                 printf("%i DefineFontInfo\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 14:
                 printf("%i DefineSound\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 15:
                 printf("%i StartSound\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 17:
                 printf("%i DefineButtonSound\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 18:
-                printf("%i SoundStreamHead\n", tv);
-                stream += rh->length();
+                printf("%i SoundbufHead\n", tv);
+                buf += rh->length();
                 break;
             case 19:
-                printf("%i SoundStreamBlock\n", tv);
-                stream += rh->length();
+                printf("%i SoundbufBlock\n", tv);
+                buf += rh->length();
                 break;
             case 20:
                 printf("%i DefineBitsLossless\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 21:
                 printf("%i DefineBitsJPEG2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 22:
                 printf("%i DefineShape2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 23:
                 printf("%i DefineButtonCxform\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 24:
                 printf("%i Protect\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 26:
-                printf("%i PlaceObject2\n", tv);
-                stream += rh->length();
+                //printf("%i PlaceObject2\n", tv);
+                //buf += rh->length();
+                
+                t = new PlaceObject2;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 28:
                 printf("%i RemoveObject2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 32:
                 printf("%i DefineShape3\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 33:
                 printf("%i DefineText2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 34:
                 printf("%i DefineButton2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 35:
                 printf("%i DefineBitsJPEG3\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 36:
                 printf("%i DefineBitsLossless2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 37:
                 printf("%i DefineEditText\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 39:
                 printf("%i DefineSprite\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 43:
                 printf("%i FrameLabel\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 45:
-                printf("%i SoundStreamHead2\n", tv);
-                stream += rh->length();
+                printf("%i SoundbufHead2\n", tv);
+                buf += rh->length();
                 break;
             case 46:
                 printf("%i DefineMorphShape\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 48:
                 printf("%i DefineFont2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 56:
                 printf("%i ExportAssets\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 57:
                 printf("%i ImportAssets\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 58:
                 printf("%i EnableDebugger\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 59:
                 printf("%i DoInitAction\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 60:
-                printf("%i DefineVideoStream\n", tv);
-                stream += rh->length();
+                printf("%i DefineVideobuf\n", tv);
+                buf += rh->length();
                 break;
             case 61:
                 printf("%i VideoFrame\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 62:
                 printf("%i DefineFontInfo2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 64:
                 printf("%i EnableDebugger2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 65:
                 printf("%i ScriptLimits\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 66:
                 printf("%i SetTabIndex\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 69:
                 //printf("%i FileAttributes\n", tv);
-                //stream += rh->length();
+                //buf += rh->length();
                 
                 t = new FileAttributes;
                 t -> recordHeader = rh;
-                t -> fromSWF(stream);
+                t -> fromSWF(buf);
                 break;
             case 70:
                 printf("%i PlaceObject3\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 71:
                 printf("%i ImportAssets2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 73:
                 printf("%i DefineFontAlignZones\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 74:
                 printf("%i CSMTextSettings\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 75:
                 printf("%i DefineFont3\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 76:
                 printf("%i SymbolClass\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 77:
                 printf("%i Metadata\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 78:
                 printf("%i DefineScalingGrid\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 82:
                 printf("%i DoABC\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 83:
                 printf("%i DefineShape4\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 84:
                 printf("%i DefineMorphShape2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 86:
                 printf("%i DefineSceneAndFrameLabelData\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 87:
                 printf("%i DefineBinaryData\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 88:
                 printf("%i DefineFontName\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 89:
                 printf("%i StartSound2\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 90:
                 printf("%i DefineBitsJPEG4\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
             case 91:
                 printf("%i DefineFont4\n", tv);
-                stream += rh->length();
+                buf += rh->length();
                 break;
                 
             default:
                 printf("\nEncountered unknown tag\n");
-                stream += rh->length();
+                buf += rh->length();
                 break;
         }
         

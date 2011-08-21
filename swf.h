@@ -8,7 +8,11 @@
 
 namespace swf
 {
-	
+	static unsigned int getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+    static unsigned int getUBits(         char * ptr, unsigned int n, unsigned int startAt);
+    static   signed int getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+    static   signed int getSBits(         char * ptr, unsigned int n, unsigned int startAt);
+    
 	//--------------------------------------------------------------
 	//
 	//			               ABSTRACT BASE
@@ -20,7 +24,8 @@ namespace swf
 	//-----------------------------------------
 	class AbstractBase {
 	public:
-		virtual void fromSWF( char *& ptr) = 0;
+		virtual void fromSWF( char *& buf ) = 0;
+        //virtual void toSWF( char *& buf ) = 0;
 		virtual ~AbstractBase() = 0;
 	};
 	
@@ -30,16 +35,15 @@ namespace swf
 	//
 	//--------------------------------------------------------------
 	
+    //----------------------------------------------------
+	//                       General
+	//----------------------------------------------------
+    
 	//-----------------------------------------
 	//                AbstractData
 	//-----------------------------------------
 	class AbstractData : public AbstractBase {
-    protected:
-        bool valueSet;
 	public:
-		static unsigned int getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
-		static   signed int getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
-		
 		virtual ~AbstractData() = 0;
 	};
 	
@@ -49,7 +53,7 @@ namespace swf
 	class U8 : public AbstractData {
 		unsigned char value;
 	public:
-		virtual void fromSWF( char *& ptr );
+		virtual void fromSWF( char *& buf );
 		unsigned char toBE();
 	};
 	
@@ -59,7 +63,7 @@ namespace swf
 	class U16 : public AbstractData {
 		unsigned short int value;
 	public:
-		virtual void fromSWF( char *& ptr );
+		virtual void fromSWF( char *& buf );
 		double toFixed8();
 		float toFloat();
 		unsigned short int getValue();
@@ -71,15 +75,24 @@ namespace swf
 	class U32 : public AbstractData {
 		unsigned int value;
 	public:
-        virtual void fromSWF( char *& ptr );
+        virtual void fromSWF( char *& buf );
 		
-        double toFixed16();
+        double toFixed16();//TODO double?
 		float toFloat();
         
 		unsigned int getValue();
         void setValue(unsigned int value);
 	};
-	
+    
+    //-----------------------------------------
+    //                 String
+    //-----------------------------------------
+	class String : AbstractData {
+        std::string value;
+    public:
+        void virtual fromSWF( char *& buf );
+    };
+    
 	//-----------------------------------------
 	//                   Twip
 	//-----------------------------------------	
@@ -90,6 +103,27 @@ namespace swf
 		signed int toPX();
 	};
 	
+    //-----------------------------------------
+	//                   RGB
+	//-----------------------------------------
+    class RGB : public AbstractData {
+        U32 value;
+        int type;
+    public:
+        /*
+         -1 ARGB
+          0  RGB
+          1  RGBA
+         */
+        RGB( int type = 0 );
+        virtual void fromSWF( char *& buf );
+        
+        /*unsigned char r();
+        unsigned char g();
+        unsigned char b();
+        unsigned char a();*/
+    };
+    
 	//-----------------------------------------
 	//                   RECT
 	//-----------------------------------------
@@ -100,11 +134,149 @@ namespace swf
 		Twip xMax;
 		Twip yMin;
 		Twip yMax;
-		virtual void fromSWF( char *& ptr );
+		virtual void fromSWF( char *& buf );
 		unsigned int toBE();
 	};
-	
-	//--------------------------------------------------------------
+    
+    //-----------------------------------------
+	//                   MATRIX
+	//-----------------------------------------
+	class MATRIX : public AbstractData {
+        //
+        //scale
+        //
+        bool hasScale;
+        unsigned char nScaleBits;
+        U32 scaleX;
+        U32 scaleY;
+        
+        //
+        //rotation
+        //
+        bool hasRotate;
+        unsigned char nRotateBits;
+        U32 rotateSkew0;
+        U32 rotateSkew1;
+        
+        //
+        //translation
+        //
+        unsigned char nTranlateBits;
+        U32 translateX;
+        U32 translateY;
+	public:
+		virtual void fromSWF( char *& buf );
+	};
+    
+    //-----------------------------------------
+	//                   CXFORM
+	//-----------------------------------------
+	class CXFORM : public AbstractData {
+    protected:
+        bool hasAddTerms;
+        bool hasMultTerms;
+        unsigned short nBits;
+        
+        unsigned char rm;
+        unsigned char gm;
+        unsigned char bm;
+        unsigned char ra;
+        unsigned char ga;
+        unsigned char ba;
+	public:
+		virtual void fromSWF( char *& buf );
+	};
+    
+    //-----------------------------------------
+	//              CXFORMWITHALPHA
+	//-----------------------------------------
+	class CXFORMWITHALPHA : public CXFORM {
+        unsigned char am;
+        unsigned char aa;
+	public:
+		virtual void fromSWF( char *& buf );
+	};
+    
+    //----------------------------------------------------
+	//                       Actions
+	//----------------------------------------------------
+    
+    //-----------------------------------------
+	//              ActionRecord
+	//-----------------------------------------
+    class ActionRecord : AbstractData {
+    public:
+        U8 actionCode;
+        U16 length;
+        
+        virtual void fromSWF( char *& buf );
+    };
+    
+    //----------------------------------------------------
+	//                       DisplayList
+	//----------------------------------------------------
+    
+    //-----------------------------------------
+	//              ClipEventFlags
+	//-----------------------------------------
+    class ClipEventFlags : AbstractData {
+    public:
+        bool keyUp;
+        bool keyDown;
+        bool mouseUp;
+        bool mouseDown;
+        bool mouseMove;
+        bool unload;
+        bool enterFrame;
+        bool load;
+        bool dragOver;
+        bool rollOut;
+        bool rollOver;
+        bool releaseOutside;
+        bool release;
+        bool press;
+        bool initialize;
+        bool data;
+        
+        //below this line: swf >= 6
+        
+        //reserved UB[5]
+        bool construct;
+        bool keyPress;
+        bool dragOut;
+        //reserved UB[8]
+        
+        virtual void fromSWF( char *& buf );
+    };
+    
+    //-----------------------------------------
+	//              ClipActionRecord
+	//-----------------------------------------
+    class ClipActionRecord : AbstractData {
+    public:
+        ClipEventFlags eventFlags;
+        U32 size;
+        U8 keyCode;
+        std::vector<ActionRecord> actions;
+        
+        virtual void fromSWF( char *& buf );
+    };
+    
+    //-----------------------------------------
+	//              ClipActions
+	//-----------------------------------------
+    class ClipActions : AbstractData {
+    public:
+        U16 reserved;
+        ClipEventFlags allEventFlags;
+        std::vector<ClipActionRecord> records;
+        U16 endFlag5;
+        U32 endFlag6;
+        
+        virtual void fromSWF( char *& buf );
+    };
+    
+    //--------------------------------------------------------------
 	//
 	//			                   TAGS
 	//
@@ -119,7 +291,7 @@ namespace swf
 		short int tag;
 		bool isShort;
 	public:
-		virtual void fromSWF( char *& stream );
+		virtual void fromSWF( char *& buf );
 		short int type();
 		unsigned int length();
 	};
@@ -151,9 +323,8 @@ namespace swf
 		U16 _frameRate;
 		U16 _frameCount;
 	public:
-		virtual void fromSWF(char *& stream);
-		void continueWith(char *& stream);
-		virtual ~SWFHeader();
+		virtual void fromSWF(char *& buf);
+		void continueWith(char *& buf);
 		
 		//
 		//accessors
@@ -167,9 +338,57 @@ namespace swf
 	//             1 ShowFrame
 	//-----------------------------------------
 	class ShowFrame : public AbstractTag {
+	public:/* nothing here. only contains a record header */
+		virtual void fromSWF(char *& buf);
+	};
+    
+    //-----------------------------------------
+	//             4 PlaceObject
+	//-----------------------------------------
+	class PlaceObject : public AbstractTag {
+        U16 characterId;
+        U16 depth;
+        MATRIX matrix;
+        //CXFORM colorTransform;
 	public:
-		virtual void fromSWF(char *& stream);
-		virtual ~ShowFrame();
+		virtual void fromSWF(char *& buf);
+	};
+    
+    //-----------------------------------------
+	//             9 SetBackgroundColor
+	//-----------------------------------------
+	class SetBackgroundColor : public AbstractTag {
+	public:
+        RGB color;
+		virtual void fromSWF(char *& buf);
+	};
+    
+    //-----------------------------------------
+	//             26 PlaceObject2
+	//-----------------------------------------
+    /*
+     version: >= SWF 3
+     */
+	class PlaceObject2 : public AbstractTag {
+        bool hasClipActions;//>= SWF 5
+        bool hasClipDepth;
+        bool hasName;
+        bool hasRatio;
+        bool hasColorTransform;
+        bool hasMatrix;
+        bool hasCharacter;
+        bool moves;
+        
+        U16 depth;
+        U16 characterId;
+        MATRIX matrix;
+        CXFORMWITHALPHA colorTransform;
+        U16 ratio;
+        String name;
+        U16 clipDepth;
+        ClipActions clipActions;
+	public:
+		virtual void fromSWF(char *& buf);
 	};
     
     //-----------------------------------------
@@ -182,8 +401,7 @@ namespace swf
         bool _isAS3;
         bool _useNetwork;
 	public:
-		virtual void fromSWF(char *& stream);
-		virtual ~FileAttributes();
+		virtual void fromSWF(char *& buf);
 	};
 	
 	//-----------------------------------------
@@ -194,8 +412,8 @@ namespace swf
 	public:
 		SWFHeader header;
 		
-		virtual void fromSWF(char *& stream);
-		void continueWith(char *& stream);
+		virtual void fromSWF(char *& buf);
+		void continueWith(char *& buf);
 		
 		void toSWF();
 		

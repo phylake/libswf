@@ -30,7 +30,8 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//
 	//open file
 	//
-	int fd = open("the.swf", O_RDONLY);
+	
+    int fd = open("the.swf", O_RDONLY);
 	switch (fd) {
 		case EACCES:
 			printf("EACCES %i\n", fd);
@@ -47,7 +48,8 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//
 	//fstat
 	//
-	struct stat statbuf;
+	
+    struct stat statbuf;
 	fstat(fd, &statbuf);
 	
 	const off_t IN_SIZE = statbuf.st_size;
@@ -56,6 +58,7 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//
 	//read file
 	//
+    
 	int rd = read(fd, inBuf, IN_SIZE);
 	close(fd);
 	
@@ -82,14 +85,6 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//
 	//zlib
 	//
-	//swf::SWFHeader sh;
-	//sh.fromSWF((char *)inBuf);
-	//78 00 05 5f 00 00 0f a0 00 00 0c 01 00 44 11 08
-	//01111
-	//000000000000000
-	//010101011111000
-	//000000000000000
-	//001111101000000
 	
 	unsigned int OUT_SIZE = swf.header.fileLength().getValue();
 	unsigned char outBuf[OUT_SIZE - uncompressedBytes];//known uncompressed size - already uncompressed bytes
@@ -124,7 +119,7 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 		printf("\n\noutBuf\n");
 		dumpBuf(outBuf, OUT_SIZE);
 		
-		temp = temp = (char *)&outBuf[0];
+		temp = (char *)&outBuf[0];
 		//swf.continueWith((char *)outBuf);
 	} else {
 		//swf.continueWith();
@@ -160,7 +155,7 @@ static unsigned int rotateBits(unsigned int value, int n) {
 	return result;
 }
 
-void test() {
+void testIEEE754() {
 	/*
 	 1-5-10
 	 1-8-23
@@ -172,8 +167,7 @@ void test() {
 	unsigned ss = sizeof(unsigned short) * 8;
 	unsigned sf = sizeof(float) * 8;
 	
-	//unsigned short value = 0x3555;
-	unsigned short value = 0x3c00;
+	unsigned short value = 0x3555;
 	
 	if ( !(value & 0x3ff) ) return;
 	
@@ -181,20 +175,13 @@ void test() {
 	int e = (value >> 10) & 0x1f;
 	int m = value & 0x3ff;
 	
-	if( 0 ) {
-		int h = 0;
-		while( !(m & 0x400) ) {
-			m <<= 1;
-			h++;
-		}
-		m &= 0x3ff;
-		e -= h;
-		e += 0x6f;
-	} else {
-		e += 112;
-	}
-
-	
+    /*
+     proportionate mantissa
+     float16 / 2^10 = float32 / 2^23
+     float16 = float32 * 2^(23 - 10)
+    */
+	m *= 8192;
+    
 	unsigned ret = 0;
 	//ret |= s;
 	ret = (value & 0x8000 ) << 16;
@@ -206,8 +193,20 @@ void test() {
 	}
 }
 
+void test() {
+    char ar[3];
+    ar[0] = 'h';
+    ar[1] = 'i';
+    //ar[2] = 0;
+    
+    char * ptr = &ar[0];
+    
+    std::string s1;
+    s1.assign(ptr);
+}
+
 int main (int argc, char * const argv[]) {
-	//test(); return 0;
+	test(); return 0;
 	
     char * buf;
 	unsigned int * bufLen;
