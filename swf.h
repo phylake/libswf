@@ -6,11 +6,13 @@
 #include "swfamf.h"
 #include "math.h"
 
+#define buf_type unsigned char
+
 namespace swf
 {
-	static unsigned int getUBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+	static unsigned int getUBits(buf_type * ptr, unsigned int n, unsigned int startAt);
     static unsigned int getUBits(         char * ptr, unsigned int n, unsigned int startAt);
-    static   signed int getSBits(unsigned char * ptr, unsigned int n, unsigned int startAt);
+    static   signed int getSBits(buf_type * ptr, unsigned int n, unsigned int startAt);
     static   signed int getSBits(         char * ptr, unsigned int n, unsigned int startAt);
     
 	//--------------------------------------------------------------
@@ -24,8 +26,8 @@ namespace swf
 	//-----------------------------------------
 	class AbstractBase {
 	public:
-		virtual void fromSWF( char *& buf ) = 0;
-        //virtual void toSWF( char *& buf ) = 0;
+		virtual void fromSWF( buf_type *& buf ) = 0;
+        //virtual void toSWF( buf_type *& buf ) = 0;
 		virtual ~AbstractBase() = 0;
 	};
 	
@@ -53,8 +55,8 @@ namespace swf
 	class U8 : public AbstractData {
 		unsigned char value;
 	public:
-		virtual void fromSWF( char *& buf );
-		unsigned char toBE();
+		virtual void fromSWF( buf_type *& buf );
+		unsigned char getValue();
 	};
 	
 	//-----------------------------------------
@@ -63,7 +65,7 @@ namespace swf
 	class U16 : public AbstractData {
 		unsigned short int value;
 	public:
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 		double toFixed8();
 		float toFloat();
 		unsigned short int getValue();
@@ -75,7 +77,7 @@ namespace swf
 	class U32 : public AbstractData {
 		unsigned int value;
 	public:
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
 		
         double toFixed16();//TODO double?
 		float toFloat();
@@ -90,7 +92,7 @@ namespace swf
 	class String : AbstractData {
         std::string value;
     public:
-        void virtual fromSWF( char *& buf );
+        void virtual fromSWF( buf_type *& buf );
     };
     
 	//-----------------------------------------
@@ -116,7 +118,7 @@ namespace swf
           1  RGBA
          */
         RGB( int type = 0 );
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
         
         /*unsigned char r();
         unsigned char g();
@@ -134,7 +136,7 @@ namespace swf
 		Twip xMax;
 		Twip yMin;
 		Twip yMax;
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 		unsigned int toBE();
 	};
     
@@ -165,7 +167,7 @@ namespace swf
         U32 translateX;
         U32 translateY;
 	public:
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 	};
     
     //-----------------------------------------
@@ -184,7 +186,7 @@ namespace swf
         unsigned char ga;
         unsigned char ba;
 	public:
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 	};
     
     //-----------------------------------------
@@ -194,7 +196,7 @@ namespace swf
         unsigned char am;
         unsigned char aa;
 	public:
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 	};
     
     //----------------------------------------------------
@@ -209,7 +211,7 @@ namespace swf
         U8 actionCode;
         U16 length;
         
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
     };
     
     //----------------------------------------------------
@@ -246,7 +248,7 @@ namespace swf
         bool dragOut;
         //reserved UB[8]
         
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
     };
     
     //-----------------------------------------
@@ -259,7 +261,7 @@ namespace swf
         U8 keyCode;
         std::vector<ActionRecord> actions;
         
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
     };
     
     //-----------------------------------------
@@ -273,7 +275,7 @@ namespace swf
         U16 endFlag5;
         U32 endFlag6;
         
-        virtual void fromSWF( char *& buf );
+        virtual void fromSWF( buf_type *& buf );
     };
     
     //--------------------------------------------------------------
@@ -291,7 +293,7 @@ namespace swf
 		short int tag;
 		bool isShort;
 	public:
-		virtual void fromSWF( char *& buf );
+		virtual void fromSWF( buf_type *& buf );
 		short int type();
 		unsigned int length();
 	};
@@ -306,7 +308,7 @@ namespace swf
 	protected:
 		//AbstractTag *next;
 		//AbstractTag *prev;
-		char * _buffer;
+		buf_type * _buffer;
 	public:
 		RecordHeader * recordHeader;
 		virtual ~AbstractTag() = 0;
@@ -323,15 +325,18 @@ namespace swf
 		U16 _frameRate;
 		U16 _frameCount;
 	public:
-		virtual void fromSWF(char *& buf);
-		void continueWith(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
+		void continueWith(buf_type *& buf);
 		
 		//
 		//accessors
 		//
 		bool compressed();
+        U8 version();
 		U32	fileLength();
 		RECT frameSize();
+        U16 frameRate();
+        U16 frameCount();
 	};
     
     //-----------------------------------------
@@ -339,7 +344,7 @@ namespace swf
 	//-----------------------------------------
 	class ShowFrame : public AbstractTag {
 	public:/* nothing here. only contains a record header */
-		virtual void fromSWF(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
 	};
     
     //-----------------------------------------
@@ -351,7 +356,7 @@ namespace swf
         MATRIX matrix;
         //CXFORM colorTransform;
 	public:
-		virtual void fromSWF(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
 	};
     
     //-----------------------------------------
@@ -360,7 +365,7 @@ namespace swf
 	class SetBackgroundColor : public AbstractTag {
 	public:
         RGB color;
-		virtual void fromSWF(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
 	};
     
     //-----------------------------------------
@@ -388,7 +393,7 @@ namespace swf
         U16 clipDepth;
         ClipActions clipActions;
 	public:
-		virtual void fromSWF(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
 	};
     
     //-----------------------------------------
@@ -401,19 +406,19 @@ namespace swf
         bool _isAS3;
         bool _useNetwork;
 	public:
-		virtual void fromSWF(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
 	};
 	
 	//-----------------------------------------
 	//                    SWF
 	//-----------------------------------------
 	class SWF {
-		char ** _buffer;
+		buf_type ** _buffer;
 	public:
 		SWFHeader header;
 		
-		virtual void fromSWF(char *& buf);
-		void continueWith(char *& buf);
+		virtual void fromSWF(buf_type *& buf);
+		void continueWith(buf_type *& buf);
 		
 		void toSWF();
 		

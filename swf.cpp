@@ -1,6 +1,6 @@
 #include "swf.h"
 
-unsigned int swf::getUBits(unsigned char * buf, unsigned int n, unsigned int startAt = 0) {
+unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt = 0) {
 	unsigned int ret = 0;
 	unsigned int i = 0;
 	unsigned int pos;
@@ -42,10 +42,10 @@ unsigned int swf::getUBits(unsigned char * buf, unsigned int n, unsigned int sta
 }
 
 unsigned int swf::getUBits(char * buf, unsigned int n, unsigned int startAt = 0) {
-    return getUBits((unsigned char *)buf, n, startAt);
+    return getUBits((buf_type *)buf, n, startAt);
 }
 
-signed int swf::getSBits(unsigned char * buf, unsigned int n, unsigned int startAt = 0) {
+signed int swf::getSBits(buf_type * buf, unsigned int n, unsigned int startAt = 0) {
 	unsigned int ret = getUBits(buf, n, startAt);
 	
 	if ( ret & (1<<(n-1)) )
@@ -57,7 +57,7 @@ signed int swf::getSBits(unsigned char * buf, unsigned int n, unsigned int start
 }
 
 signed int swf::getSBits(char * buf, unsigned int n, unsigned int startAt = 0) {
-    return getSBits((unsigned char *)buf, n, startAt);
+    return getSBits((buf_type *)buf, n, startAt);
 }
 
 
@@ -74,22 +74,22 @@ swf::AbstractData::~AbstractData() {}
 //-----------------------------------------
 //                   U8
 //-----------------------------------------
-void swf::U8::fromSWF( char *& buf ) {
+void swf::U8::fromSWF( buf_type *& buf ) {
 	value = buf[0] & 0x000000ff;
 	buf++;
 }
 
-unsigned char swf::U8::toBE() {
+unsigned char swf::U8::getValue() {
 	return value;
 }
 
 //-----------------------------------------
 //                   U16
 //-----------------------------------------
-void swf::U16::fromSWF( char *& buf ) {
+void swf::U16::fromSWF( buf_type *& buf ) {
 	value = 
-        buf[0] <<  0 & 0x000000ff |
-        buf[1] <<  8 & 0x0000ff00
+        buf[0] << 0 & 0x000000ff |
+        buf[1] << 8 & 0x0000ff00
 	;
 	buf += 2;
 }
@@ -123,7 +123,7 @@ float swf::U16::toFloat() {
 //-----------------------------------------
 //                   U32
 //-----------------------------------------
-void swf::U32::fromSWF( char *& buf ) {
+void swf::U32::fromSWF( buf_type *& buf ) {
     value = 
         buf[0] <<  0 & 0x000000ff |
         buf[1] <<  8 & 0x0000ff00 |
@@ -159,8 +159,8 @@ float swf::U32::toFloat() {
 //-----------------------------------------
 //                 String
 //-----------------------------------------
-void swf::String::fromSWF( char *& buf ) {
-    value.assign(buf);
+void swf::String::fromSWF( buf_type *& buf ) {
+    value.assign((char *)buf);
     buf += value.length();
 }
 
@@ -178,7 +178,7 @@ swf::RGB::RGB( int type ) {
     (*this).type = type;
 }
 
-void swf::RGB::fromSWF( char *& buf ) {
+void swf::RGB::fromSWF( buf_type *& buf ) {
     value.fromSWF(buf);
     
     if( type == 0 ) buf--;//only 3 bytes were relevant
@@ -187,7 +187,7 @@ void swf::RGB::fromSWF( char *& buf ) {
 //-----------------------------------------
 //                   RECT
 //-----------------------------------------
-void swf::RECT::fromSWF( char *& buf ) {
+void swf::RECT::fromSWF( buf_type *& buf ) {
 	int i = 0;
 	
 	nBits      = getUBits(buf, 5);
@@ -217,7 +217,7 @@ unsigned int swf::RECT::toBE() {
 //-----------------------------------------
 //                   MATRIX
 //-----------------------------------------
-void swf::MATRIX::fromSWF(char *& buf) {
+void swf::MATRIX::fromSWF(buf_type *& buf) {
     int i;
     unsigned offset = 0;
     signed sTemp;
@@ -258,7 +258,7 @@ void swf::MATRIX::fromSWF(char *& buf) {
 //-----------------------------------------
 //                   CXFORM
 //-----------------------------------------
-void swf::CXFORM::fromSWF(char *& buf) {
+void swf::CXFORM::fromSWF(buf_type *& buf) {
     int i = 0;
     hasAddTerms  = getUBits(buf, 1, i++);
     hasMultTerms = getUBits(buf, 1, i++);
@@ -289,7 +289,7 @@ void swf::CXFORM::fromSWF(char *& buf) {
 //-----------------------------------------
 //              CXFORMWITHALPHA
 //-----------------------------------------
-void swf::CXFORMWITHALPHA::fromSWF(char *& buf) {
+void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
     int i = 0;
     hasAddTerms  = getUBits(buf, 1, i++);
     hasMultTerms = getUBits(buf, 1, i++);
@@ -324,19 +324,19 @@ void swf::CXFORMWITHALPHA::fromSWF(char *& buf) {
 //-----------------------------------------
 //              ActionRecord
 //-----------------------------------------
-void swf::ActionRecord::fromSWF( char *& buf ) {
+void swf::ActionRecord::fromSWF( buf_type *& buf ) {
 }
 
 //-----------------------------------------
 //              ClipEventFlags
 //-----------------------------------------
-void swf::ClipEventFlags::fromSWF( char *& buf ) {
+void swf::ClipEventFlags::fromSWF( buf_type *& buf ) {
 }
 
 //-----------------------------------------
 //              ClipActionRecord
 //-----------------------------------------
-void swf::ClipActionRecord::fromSWF( char *& buf ) {
+void swf::ClipActionRecord::fromSWF( buf_type *& buf ) {
     eventFlags.fromSWF(buf);
     size.fromSWF(buf);
     keyCode.fromSWF(buf);
@@ -346,7 +346,7 @@ void swf::ClipActionRecord::fromSWF( char *& buf ) {
 //-----------------------------------------
 //              ClipActions
 //-----------------------------------------
-void swf::ClipActions::fromSWF( char *& buf ) {
+void swf::ClipActions::fromSWF( buf_type *& buf ) {
     reserved.fromSWF(buf);
     allEventFlags.fromSWF(buf);
     
@@ -360,7 +360,7 @@ void swf::ClipActions::fromSWF( char *& buf ) {
 //-----------------------------------------
 //                RecordHeader
 //-----------------------------------------
-void swf::RecordHeader::fromSWF( char *& buf ) {
+void swf::RecordHeader::fromSWF( buf_type *& buf ) {
 	tagCodeAndLength.fromSWF(buf);
 	
 	tag = (tagCodeAndLength.getValue() >> 6) & 0x3ff;
@@ -396,7 +396,7 @@ swf::AbstractTag::~AbstractTag() {}
 //-----------------------------------------
 //                SWFHeader
 //-----------------------------------------
-void swf::SWFHeader::fromSWF( char *& buf) {
+void swf::SWFHeader::fromSWF( buf_type *& buf) {
 	_compressed = buf[0] == 'C';
 	
 	buf += 3;//skip 'W' and 'F'
@@ -404,31 +404,50 @@ void swf::SWFHeader::fromSWF( char *& buf) {
 	_fileLength.fromSWF(buf);
 }
 
-void swf::SWFHeader::continueWith(char *& buf) {
+void swf::SWFHeader::continueWith(buf_type *& buf) {
 	_frameSize.fromSWF(buf);
 	_frameRate.fromSWF(buf);
 	_frameCount.fromSWF(buf);
 	
 	#ifdef DEBUG
     printf("SWFHeader\n");
+    printf("\t%i compressed\n", _compressed);
+    printf("\t%i version\n", _version.getValue());
 	printf("\t%i fileLength\n", _fileLength.getValue());
+    //printf("\t%i frameSize\n", _frameSize.getValue());
 	printf("\t%f frameRate\n", _frameRate.toFixed8());
 	printf("\t%i frameCount\n", _frameCount.getValue());
 	#endif
+}
+
+bool swf::SWFHeader::compressed() {
+    return _compressed;
+}
+
+swf::U8 swf::SWFHeader::version() {
+    return _version;
 }
 
 swf::U32 swf::SWFHeader::fileLength() {
 	return _fileLength;
 }
 
-bool swf::SWFHeader::compressed() {
-	return _compressed;
+swf::RECT swf::SWFHeader::frameSize() {
+    return _frameSize;
+}
+
+swf::U16 swf::SWFHeader::frameRate() {
+    return _frameRate;
+}
+
+swf::U16 swf::SWFHeader::frameCount() {
+    return _frameCount;
 }
 
 //-----------------------------------------
 //             1 ShowFrame
 //-----------------------------------------
-void swf::ShowFrame::fromSWF(char *& buf) {
+void swf::ShowFrame::fromSWF(buf_type *& buf) {
 #ifdef DEBUG
     printf(" 1 ShowFrame\n");
 #endif
@@ -437,7 +456,7 @@ void swf::ShowFrame::fromSWF(char *& buf) {
 //-----------------------------------------
 //             9 SetBackgroundColor
 //-----------------------------------------
-void swf::SetBackgroundColor::fromSWF(char *& buf) {
+void swf::SetBackgroundColor::fromSWF(buf_type *& buf) {
     color.fromSWF(buf);
     
 #ifdef DEBUG
@@ -449,7 +468,7 @@ void swf::SetBackgroundColor::fromSWF(char *& buf) {
 //-----------------------------------------
 //             26 PlaceObject2
 //-----------------------------------------
-void swf::PlaceObject2::fromSWF(char *& buf) {
+void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     int i = 0;
     hasClipActions    = getUBits(buf, 1, i++);
     hasClipDepth      = getUBits(buf, 1, i++);
@@ -473,7 +492,7 @@ void swf::PlaceObject2::fromSWF(char *& buf) {
 //-----------------------------------------
 //             69 FileAttributes
 //-----------------------------------------
-void swf::FileAttributes::fromSWF(char *& buf) {
+void swf::FileAttributes::fromSWF(buf_type *& buf) {
     _useDirectBlit = *buf & 0x40;
     _useGPU        = *buf & 0x20;
     _hasMetadata   = *buf & 0x10;
@@ -495,12 +514,12 @@ void swf::FileAttributes::fromSWF(char *& buf) {
 //-----------------------------------------
 //                  SWF
 //-----------------------------------------
-void swf::SWF::fromSWF(char *& buf) {
+void swf::SWF::fromSWF(buf_type *& buf) {
 	_buffer = &buf;
 	header.fromSWF(buf);
 }
 
-void swf::SWF::continueWith(char *& buf) {
+void swf::SWF::continueWith(buf_type *& buf) {
 	_buffer = &buf;
 	//(*_buffer) += 4;//want to do this but outBuf is cropped at the moment
 	header.continueWith(buf);
@@ -618,12 +637,12 @@ void swf::SWF::continueWith(char *& buf) {
                 buf += rh->length();
                 break;
             case 26:
-                //printf("%i PlaceObject2\n", tv);
-                //buf += rh->length();
+                printf("%i PlaceObject2\n", tv);
+                buf += rh->length();
                 
-                t = new PlaceObject2;
-                t -> recordHeader = rh;
-                t -> fromSWF(buf);
+                //t = new PlaceObject2;
+                //t -> recordHeader = rh;
+                //t -> fromSWF(buf);
                 break;
             case 28:
                 printf("%i RemoveObject2\n", tv);

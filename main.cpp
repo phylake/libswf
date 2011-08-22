@@ -76,8 +76,8 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	printf("\n\ninBuf\n");
 	dumpBuf(inBuf, IN_SIZE);
 	
-	char * temp;
-	temp = (char *)&inBuf[0];
+	buf_type * temp;
+	temp = &inBuf[0];
 	
 	swf::SWF swf;
 	swf.fromSWF(temp);
@@ -119,7 +119,7 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 		printf("\n\noutBuf\n");
 		dumpBuf(outBuf, OUT_SIZE);
 		
-		temp = (char *)&outBuf[0];
+		temp = &outBuf[0];
 		//swf.continueWith((char *)outBuf);
 	} else {
 		//swf.continueWith();
@@ -206,7 +206,7 @@ void test() {
 }
 
 int main (int argc, char * const argv[]) {
-	test(); return 0;
+	//test(); return 0;
 	
     char * buf;
 	unsigned int * bufLen;
