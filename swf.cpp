@@ -60,6 +60,27 @@ signed int swf::getSBits(char * buf, unsigned int n, unsigned int startAt = 0) {
     return getSBits((buf_type *)buf, n, startAt);
 }
 
+//----------------------------------------------------
+//                       Versioning
+//----------------------------------------------------
+unsigned char swf::Version::version() {
+    return value;
+}
+
+unsigned short swf::Version::versionNum() {
+    return (unsigned short)value;
+}
+
+void swf::MutableVersion::setVersion(unsigned char version) {
+    value = version;
+}
+
+void swf::MutableVersion::setVersion(buf_type *& buf) {
+    setVersion(*buf);
+    buf++;
+}
+
+swf::VersionRequirement::VersionRequirement(Version & version) : _version(version) {}
 
 //-----------------------------------------
 //                 AbstractBase
@@ -71,6 +92,12 @@ swf::AbstractBase::~AbstractBase() {}
 //-----------------------------------------
 swf::AbstractData::~AbstractData() {}
 
+//-----------------------------------------
+//         AbstractVData
+//-----------------------------------------
+swf::AbstractVData::AbstractVData(Version & version) : VersionRequirement(version) {}
+
+swf::AbstractVData::~AbstractVData() {}
 //-----------------------------------------
 //                   U8
 //-----------------------------------------
@@ -330,7 +357,26 @@ void swf::ActionRecord::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 //              ClipEventFlags
 //-----------------------------------------
+swf::ClipEventFlags::ClipEventFlags(Version & version) : AbstractVData(version) {}
+
 void swf::ClipEventFlags::fromSWF( buf_type *& buf ) {
+    int i = 0;
+    keyUp          = getUBits(buf, 1, i++);
+    keyDown        = getUBits(buf, 1, i++);
+    mouseUp        = getUBits(buf, 1, i++);
+    mouseDown      = getUBits(buf, 1, i++);
+    mouseMove      = getUBits(buf, 1, i++);
+    unload         = getUBits(buf, 1, i++);
+    enterFrame     = getUBits(buf, 1, i++);
+    load           = getUBits(buf, 1, i++);
+    dragOver       = getUBits(buf, 1, i++);
+    rollOut        = getUBits(buf, 1, i++);
+    rollOver       = getUBits(buf, 1, i++);
+    releaseOutside = getUBits(buf, 1, i++);
+    release        = getUBits(buf, 1, i++);
+    press          = getUBits(buf, 1, i++);
+    initialize     = getUBits(buf, 1, i++);
+    data           = getUBits(buf, 1, i++);
 }
 
 //-----------------------------------------
@@ -346,6 +392,8 @@ void swf::ClipActionRecord::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 //              ClipActions
 //-----------------------------------------
+swf::ClipActions::ClipActions(Version & version) : AbstractVData(version), allEventFlags(version) {}
+
 void swf::ClipActions::fromSWF( buf_type *& buf ) {
     reserved.fromSWF(buf);
     allEventFlags.fromSWF(buf);
@@ -396,11 +444,11 @@ swf::AbstractTag::~AbstractTag() {}
 //-----------------------------------------
 //                SWFHeader
 //-----------------------------------------
-void swf::SWFHeader::fromSWF( buf_type *& buf) {
+void swf::SWFHeader::fromSWF(buf_type *& buf) {
 	_compressed = buf[0] == 'C';
 	
 	buf += 3;//skip 'W' and 'F'
-	_version.fromSWF(buf);
+	__version.fromSWF(buf);
 	_fileLength.fromSWF(buf);
 }
 
@@ -412,7 +460,7 @@ void swf::SWFHeader::continueWith(buf_type *& buf) {
 	#ifdef DEBUG
     printf("SWFHeader\n");
     printf("\t%i compressed\n", _compressed);
-    printf("\t%i version\n", _version.getValue());
+    printf("\t%i version\n", __version.getValue());
 	printf("\t%i fileLength\n", _fileLength.getValue());
     //printf("\t%i frameSize\n", _frameSize.getValue());
 	printf("\t%f frameRate\n", _frameRate.toFixed8());
@@ -425,7 +473,7 @@ bool swf::SWFHeader::compressed() {
 }
 
 swf::U8 swf::SWFHeader::version() {
-    return _version;
+    return __version;
 }
 
 swf::U32 swf::SWFHeader::fileLength() {
@@ -814,6 +862,10 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 buf += rh->length();
                 break;
         }
+        
+        //t -> recordHeader = rh;
+        //t -> fromSWF(buf);
+        //t -> setVersion(<#unsigned char *version#>)
         
         vrh.push_back( *rh );
     } while ( rh->type() != 0 );

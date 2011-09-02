@@ -10,10 +10,10 @@
 
 namespace swf
 {
-	static unsigned int getUBits(buf_type * ptr, unsigned int n, unsigned int startAt);
-    static unsigned int getUBits(         char * ptr, unsigned int n, unsigned int startAt);
-    static   signed int getSBits(buf_type * ptr, unsigned int n, unsigned int startAt);
-    static   signed int getSBits(         char * ptr, unsigned int n, unsigned int startAt);
+    static unsigned getUBits(buf_type * ptr, unsigned int n, unsigned int startAt);
+    static unsigned getUBits(    char * ptr, unsigned int n, unsigned int startAt);
+    static   signed getSBits(buf_type * ptr, unsigned int n, unsigned int startAt);
+    static   signed getSBits(    char * ptr, unsigned int n, unsigned int startAt);
     
 	//--------------------------------------------------------------
 	//
@@ -21,16 +21,41 @@ namespace swf
 	//
 	//--------------------------------------------------------------
 	
+    //----------------------------------------------------
+	//                       Versioning
+	//----------------------------------------------------
+    
+    class Version {
+    protected:
+        unsigned char value;
+    public:
+        unsigned char version();
+        unsigned short versionNum();
+    };
+    
+    class MutableVersion : public Version {
+    public:
+        void setVersion(unsigned char value);
+        void setVersion(buf_type *& value);
+    };
+    
+    class VersionRequirement {
+    protected:
+        Version & _version;
+    public:
+        VersionRequirement(Version & version);
+    };
+    
 	//-----------------------------------------
 	//                AbstractBase
 	//-----------------------------------------
 	class AbstractBase {
-	public:
+    public:
 		virtual void fromSWF( buf_type *& buf ) = 0;
         //virtual void toSWF( buf_type *& buf ) = 0;
 		virtual ~AbstractBase() = 0;
 	};
-	
+    
 	//--------------------------------------------------------------
 	//
 	//			               DATA TYPES
@@ -41,12 +66,21 @@ namespace swf
 	//                       General
 	//----------------------------------------------------
     
-	//-----------------------------------------
+    //-----------------------------------------
 	//                AbstractData
 	//-----------------------------------------
 	class AbstractData : public AbstractBase {
-	public:
-		virtual ~AbstractData() = 0;
+    public:
+        virtual ~AbstractData() = 0;
+	};
+    
+    //-----------------------------------------
+	//         AbstractVData
+	//-----------------------------------------
+	class AbstractVData : public AbstractBase, protected VersionRequirement {
+    public:
+        AbstractVData(Version & version);
+        virtual ~AbstractVData() = 0;
 	};
 	
 	//-----------------------------------------
@@ -89,7 +123,7 @@ namespace swf
     //-----------------------------------------
     //                 String
     //-----------------------------------------
-	class String : AbstractData {
+	class String : public AbstractData {
         std::string value;
     public:
         void virtual fromSWF( buf_type *& buf );
@@ -206,7 +240,7 @@ namespace swf
     //-----------------------------------------
 	//              ActionRecord
 	//-----------------------------------------
-    class ActionRecord : AbstractData {
+    class ActionRecord : public AbstractData {
     public:
         U8 actionCode;
         U16 length;
@@ -221,7 +255,7 @@ namespace swf
     //-----------------------------------------
 	//              ClipEventFlags
 	//-----------------------------------------
-    class ClipEventFlags : AbstractData {
+    class ClipEventFlags : public AbstractVData {
     public:
         bool keyUp;
         bool keyDown;
@@ -248,13 +282,14 @@ namespace swf
         bool dragOut;
         //reserved UB[8]
         
+        ClipEventFlags(Version & version);
         virtual void fromSWF( buf_type *& buf );
     };
     
     //-----------------------------------------
 	//              ClipActionRecord
 	//-----------------------------------------
-    class ClipActionRecord : AbstractData {
+    class ClipActionRecord : public AbstractData {
     public:
         ClipEventFlags eventFlags;
         U32 size;
@@ -267,7 +302,7 @@ namespace swf
     //-----------------------------------------
 	//              ClipActions
 	//-----------------------------------------
-    class ClipActions : AbstractData {
+    class ClipActions : public AbstractVData {
     public:
         U16 reserved;
         ClipEventFlags allEventFlags;
@@ -275,6 +310,7 @@ namespace swf
         U16 endFlag5;
         U32 endFlag6;
         
+        ClipActions(Version & version);
         virtual void fromSWF( buf_type *& buf );
     };
     
@@ -302,16 +338,20 @@ namespace swf
 	//                AbstractTag
 	//-----------------------------------------
 	class AbstractTag : public AbstractBase {
-    private:
-        //AbstractTag(const AbstractTag&);
-        AbstractTag& operator=(const AbstractTag&);
 	protected:
-		//AbstractTag *next;
-		//AbstractTag *prev;
+        //DISALLOW_COPY_AND_ASSIGN(AbstractTag)
 		buf_type * _buffer;
 	public:
 		RecordHeader * recordHeader;
 		virtual ~AbstractTag() = 0;
+	};
+    
+    //-----------------------------------------
+	//               AbstractVTag
+	//-----------------------------------------
+	class AbstractVTag : public AbstractTag, protected VersionRequirement {
+	public:
+        AbstractVTag(Version & version);
 	};
 	
 	//-----------------------------------------
@@ -319,7 +359,7 @@ namespace swf
 	//-----------------------------------------
 	class SWFHeader : public AbstractTag {
 		bool _compressed;
-		U8 _version;
+		U8 __version;
 		U32 _fileLength;
 		RECT _frameSize;
 		U16 _frameRate;
@@ -333,6 +373,7 @@ namespace swf
 		//
 		bool compressed();
         U8 version();
+        unsigned char * versionPtr();
 		U32	fileLength();
 		RECT frameSize();
         U16 frameRate();

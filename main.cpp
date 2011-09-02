@@ -194,15 +194,6 @@ void testIEEE754() {
 }
 
 void test() {
-    char ar[3];
-    ar[0] = 'h';
-    ar[1] = 'i';
-    //ar[2] = 0;
-    
-    char * ptr = &ar[0];
-    
-    std::string s1;
-    s1.assign(ptr);
 }
 
 int main (int argc, char * const argv[]) {
