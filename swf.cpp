@@ -106,6 +106,10 @@ void swf::U8::fromSWF( buf_type *& buf ) {
 	buf++;
 }
 
+unsigned char swf::U8::readAhead( buf_type * buf ) {
+    return buf[0] & 0x000000ff;
+}
+
 unsigned char swf::U8::getValue() {
 	return value;
 }
@@ -121,6 +125,13 @@ void swf::U16::fromSWF( buf_type *& buf ) {
 	buf += 2;
 }
 
+unsigned short swf::U16::readAhead( buf_type * buf ) {
+    return
+        buf[0] << 0 & 0x000000ff |
+        buf[1] << 8 & 0x0000ff00
+    ;
+}
+
 unsigned short int swf::U16::getValue() {
 	return value;
 }
@@ -130,6 +141,7 @@ double swf::U16::toFixed8() {
 	
 	if (value & 0x00ff)
 	{
+        /* divide by the maximum decimal precision that can be held in 8 bits */
 		decimal = (double)(value & 0x00ff) / pow(10, ceil(log10(pow(2, 8))));
 	}
 	
@@ -160,6 +172,15 @@ void swf::U32::fromSWF( buf_type *& buf ) {
 	buf += 4;
 }
 
+unsigned int swf::U32::readAhead( buf_type * buf ) {
+    return
+        buf[0] <<  0 & 0x000000ff |
+        buf[1] <<  8 & 0x0000ff00 |
+        buf[2] << 16 & 0x00ff0000 |
+        buf[3] << 24 & 0xff000000
+    ;
+}
+
 unsigned int swf::U32::getValue() {
 	return value;
 }
@@ -168,15 +189,23 @@ void swf::U32::setValue(unsigned int value) {
     (*this).value = value;
 }
 
-double swf::U32::toFixed16() {
-	double decimal = 0;
+fixed16_type swf::U32::toFixed16() {
+	fixed16_type decimal = 0;
 	
 	if (value & 0x0000ffff)
 	{
-		decimal = (double)(value & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
+        /* divide by the maximum decimal precision that can be held in 16 bits */
+		decimal = (fixed16_type)(value & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
 	}
 	
 	return ((value & 0xffff0000) >> 16) + decimal;
+}
+
+/*
+ The spec's FIXED
+*/
+fixed_type swf::U32::toFixed() {
+    return toFixed16();
 }
 
 float swf::U32::toFloat() {
@@ -352,6 +381,15 @@ void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
 //              ActionRecord
 //-----------------------------------------
 void swf::ActionRecord::fromSWF( buf_type *& buf ) {
+    actionCode.fromSWF(buf);
+    if ( actionCode.getValue() >= 0x80 ) {
+        length.fromSWF(buf);
+        buf += length.getValue();
+    }
+}
+
+unsigned swf::ActionRecord::getTotalLength() {
+    return 1 + 2 + length.getValue();
 }
 
 //-----------------------------------------
@@ -382,10 +420,14 @@ void swf::ClipEventFlags::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 //              ClipActionRecord
 //-----------------------------------------
+swf::ClipActionRecord::ClipActionRecord(Version & version) : AbstractVData(version), eventFlags(version) {}
+
 void swf::ClipActionRecord::fromSWF( buf_type *& buf ) {
     eventFlags.fromSWF(buf);
     size.fromSWF(buf);
-    keyCode.fromSWF(buf);
+    
+    buf += size.getValue();
+    //keyCode.fromSWF(buf);
     //TODO actions vector
 }
 
@@ -394,15 +436,181 @@ void swf::ClipActionRecord::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 swf::ClipActions::ClipActions(Version & version) : AbstractVData(version), allEventFlags(version) {}
 
+bool swf::ClipActions::isEnd( buf_type * buf ) {
+    if( _version.versionNum() == 5 )
+    {
+        return endFlag5.readAhead(buf) == 0;
+    }
+    else if( _version.versionNum() == 6 )
+    {
+        return endFlag6.readAhead(buf) == 0;
+    }
+    
+    return true;
+}
+
 void swf::ClipActions::fromSWF( buf_type *& buf ) {
     reserved.fromSWF(buf);
     allEventFlags.fromSWF(buf);
     
-    //TODO records vector
     
-    //TODO 5 or 6?
-    //endFlag5.fromSWF(buf);
-    //endFlag6.fromSWF(buf);
+    ClipActionRecord * car;
+    do {
+        car = new ClipActionRecord(_version);
+        car -> fromSWF(buf);
+        records.push_back(car);
+    } while ( !isEnd(buf) );
+    
+    
+    if( _version.versionNum() == 5 )
+    {
+        endFlag5.fromSWF(buf);
+    }
+    else if( _version.versionNum() == 6 )
+    {
+        endFlag6.fromSWF(buf);
+    }
+    else
+    {
+        //throw an error
+    }
+}
+
+//-----------------------------------------
+//              ColorMatrixFilter
+//-----------------------------------------
+void swf::ColorMatrixFilter::fromSWF( buf_type *& buf ) {
+    
+}
+
+//-----------------------------------------
+//              ConvolutionFilter
+//-----------------------------------------
+swf::ConvolutionFilter::ConvolutionFilter() : color(RGB::TYPE_RGBA) {}
+
+void swf::ConvolutionFilter::fromSWF( buf_type *& buf ) {
+    matrixX.fromSWF(buf);
+    matrixY.fromSWF(buf);
+    divisor.fromSWF(buf);
+    bias.fromSWF(buf);
+    matrix.fromSWF(buf);
+    color.fromSWF(buf);
+    
+    clamp         = getUBits(buf, 1, 6);
+    preserveAlpha = getUBits(buf, 1, 7);
+    
+    buf += 8 / sizeof(*buf);
+}
+
+//-----------------------------------------
+//              BlurFilter
+//-----------------------------------------
+void swf::BlurFilter::fromSWF( buf_type *& buf ) {
+    blurX.fromSWF(buf);
+    blurY.fromSWF(buf);
+    
+    passes = getUBits(buf, 5);
+    
+    buf += 8 / sizeof(*buf);
+}
+
+//-----------------------------------------
+//              GlowFilter
+//-----------------------------------------
+swf::GlowFilter::GlowFilter() : color(RGB::TYPE_RGBA) {}
+
+void swf::GlowFilter::fromSWF( buf_type *& buf ) {
+    color.fromSWF(buf);
+    blurX.fromSWF(buf);
+    blurY.fromSWF(buf);
+    strength.fromSWF(buf);
+    
+    int i = 0;
+    innerShadow     = getUBits(buf, 1, i++);
+    knockout        = getUBits(buf, 1, i++);
+    compositeSource = getUBits(buf, 1, i++);
+    passes          = getUBits(buf, 5, i);
+    
+    buf += 8 / sizeof(*buf);
+}
+
+//-----------------------------------------
+//              DropshadowFilter
+//-----------------------------------------
+swf::DropshadowFilter::DropshadowFilter() : color(RGB::TYPE_RGBA) {}
+
+void swf::DropshadowFilter::fromSWF( buf_type *& buf ) {
+    color.fromSWF(buf);
+    blurX.fromSWF(buf);
+    blurY.fromSWF(buf);
+    angle.fromSWF(buf);
+    distance.fromSWF(buf);
+    strength.fromSWF(buf);
+    
+    int i = 0;
+    innerShadow     = getUBits(buf, 1, i++);
+    knockout        = getUBits(buf, 1, i++);
+    compositeSource = getUBits(buf, 1, i++);
+    passes          = getUBits(buf, 5, i);
+    
+    buf += 8 / sizeof(*buf);
+}
+
+//-----------------------------------------
+//              BevelFilter
+//-----------------------------------------
+void swf::BevelFilter::fromSWF( buf_type *& buf ) {}
+
+//-----------------------------------------
+//              GradientGlowFilter
+//-----------------------------------------
+void swf::GradientGlowFilter::fromSWF( buf_type *& buf ) {}
+
+//-----------------------------------------
+//              GradientBevelFilter
+//-----------------------------------------
+void swf::GradientBevelFilter::fromSWF( buf_type *& buf ) {}
+
+//-----------------------------------------
+//              Filter
+//-----------------------------------------
+void swf::Filter::fromSWF( buf_type *& buf ) {
+    filterId.fromSWF(buf);
+    
+    switch ((unsigned short)filterId.getValue()) {
+        case FILTER_DROPSHADOW:
+            concreteFilter = new DropshadowFilter;
+            break;
+        case FILTER_BLUR:
+            break;
+        case FILTER_GLOW:
+            break;
+        case FILTER_BEVEL:
+            break;
+        case FILTER_GRADIENTGLOW:
+            break;
+        case FILTER_CONVOLUTION:
+            break;
+        case FILTER_COLORMATRIX:
+            break;
+        case FILTER_GRADIENTBEVEL:
+            break;
+    }
+}
+
+//-----------------------------------------
+//              FilterList
+//-----------------------------------------
+void swf::FilterList::fromSWF( buf_type *& buf ) {
+    numberOfFilters.fromSWF(buf);
+    unsigned short i = (unsigned short)numberOfFilters.getValue();
+    
+    Filter * ptr;
+    while ( i-- ) {
+        ptr = new Filter;
+        ptr -> fromSWF(buf);
+        filters.push_back(ptr);
+    }
 }
 
 //-----------------------------------------
@@ -527,6 +735,8 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     hasCharacter      = getUBits(buf, 1, i++);
     moves             = getUBits(buf, 1, i++);
     
+    buf += i / sizeof(*buf);
+    
     depth.fromSWF(buf);
     if( hasCharacter ) characterId.fromSWF(buf);
     if( hasMatrix ) matrix.fromSWF(buf);
@@ -557,6 +767,44 @@ void swf::FileAttributes::fromSWF(buf_type *& buf) {
     printf("\t%i isAS3\n",         _isAS3);
     printf("\t%i useNetwork\n",    _useNetwork);
     #endif
+}
+
+//-----------------------------------------
+//             70 PlaceObject3
+//-----------------------------------------
+void swf::PlaceObject3::fromSWF(buf_type *& buf) {
+    int i = 0;
+    hasClipActions    = getUBits(buf, 1, i++);
+    hasClipDepth      = getUBits(buf, 1, i++);
+    hasName           = getUBits(buf, 1, i++);
+    hasRatio          = getUBits(buf, 1, i++);
+    hasColorTransform = getUBits(buf, 1, i++);
+    hasMatrix         = getUBits(buf, 1, i++);
+    hasCharacter      = getUBits(buf, 1, i++);
+    moves             = getUBits(buf, 1, i++);
+    
+    i += 3;//reserved UB[3]
+    
+    hasImage          = getUBits(buf, 1, i++);
+    hasClassName      = getUBits(buf, 1, i++);
+    hasCacheAsBitmap  = getUBits(buf, 1, i++);
+    hasBlendMode      = getUBits(buf, 1, i++);
+    hasFilterList     = getUBits(buf, 1, i++);
+    
+    buf += i / sizeof(*buf);
+    
+    depth.fromSWF(buf);
+    if( hasClassName || (hasImage && hasCharacter) ) className.fromSWF(buf);
+    if( hasCharacter ) characterId.fromSWF(buf);
+    if( hasMatrix ) matrix.fromSWF(buf);
+    if( hasColorTransform ) colorTransform.fromSWF(buf);
+    if( hasRatio ) ratio.fromSWF(buf);
+    if( hasName ) name.fromSWF(buf);
+    if( hasClipDepth ) clipDepth.fromSWF(buf);
+    //if( hasFilterList ) surfaceFilterList.fromSWF(buf);
+    if( hasBlendMode ) blendMode.fromSWF(buf);
+    if( hasCacheAsBitmap ) bitmapCache.fromSWF(buf);
+    if( hasClipActions ) clipActions.fromSWF(buf);
 }
 
 //-----------------------------------------
