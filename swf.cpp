@@ -479,8 +479,17 @@ void swf::ClipActions::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 //              ColorMatrixFilter
 //-----------------------------------------
+swf::ColorMatrixFilter::ColorMatrixFilter() : matrix(20) {
+}
+
 void swf::ColorMatrixFilter::fromSWF( buf_type *& buf ) {
-    
+    U32 * t;
+    int i = matrix.size();
+    while( i-- ) {
+        t = new U32;
+        t -> fromSWF(buf);
+        matrix.push_back(t);
+    }
 }
 
 //-----------------------------------------
@@ -493,7 +502,15 @@ void swf::ConvolutionFilter::fromSWF( buf_type *& buf ) {
     matrixY.fromSWF(buf);
     divisor.fromSWF(buf);
     bias.fromSWF(buf);
-    matrix.fromSWF(buf);
+    
+    U32 * t;
+    int i = matrixX.getValue() * matrixY.getValue();
+    while( i-- ) {
+        t = new U32;
+        t -> fromSWF(buf);
+        matrix.push_back(t);
+    }
+    
     color.fromSWF(buf);
     
     clamp         = getUBits(buf, 1, 6);
@@ -559,17 +576,57 @@ void swf::DropshadowFilter::fromSWF( buf_type *& buf ) {
 //-----------------------------------------
 //              BevelFilter
 //-----------------------------------------
-void swf::BevelFilter::fromSWF( buf_type *& buf ) {}
+swf::BevelFilter::BevelFilter() : shadowColor(RGB::TYPE_RGBA), highlightColor(RGB::TYPE_RGBA) {}
+
+void swf::BevelFilter::fromSWF( buf_type *& buf ) {
+    shadowColor.fromSWF(buf);
+    highlightColor.fromSWF(buf);
+    blurX.fromSWF(buf);
+    blurY.fromSWF(buf);
+    angle.fromSWF(buf);
+    distance.fromSWF(buf);
+    strength.fromSWF(buf);
+    
+    int i = 0;
+    innerShadow     = getUBits(buf, 1, i++);
+    knockout        = getUBits(buf, 1, i++);
+    compositeSource = getUBits(buf, 1, i++);
+    onTop           = getUBits(buf, 1, i++);
+    passes          = getUBits(buf, 4, i);
+    
+    buf += 8 / sizeof(*buf);
+}
 
 //-----------------------------------------
 //              GradientGlowFilter
 //-----------------------------------------
-void swf::GradientGlowFilter::fromSWF( buf_type *& buf ) {}
+void swf::GradientGlowFilter::fromSWF( buf_type *& buf ) {
+    numColors.fromSWF(buf);
+    
+    int i;
+    RGB * tRGB;
+    U8 * tU8;
+    
+    i = numColors.getValue();
+    while( i-- ) {
+        tRGB = new RGB(RGB::TYPE_RGBA);
+        tRGB -> fromSWF(buf);
+        colors.push_back(tRGB);
+    }
+    
+    i = numColors.getValue();
+    while( i-- ) {
+        tU8 = new U8;
+        tU8 -> fromSWF(buf);
+        ratios.push_back(tU8);
+    }
+}
 
 //-----------------------------------------
 //              GradientBevelFilter
 //-----------------------------------------
-void swf::GradientBevelFilter::fromSWF( buf_type *& buf ) {}
+/* identical to GradientGlowFilter. no override */
+//void swf::GradientBevelFilter::fromSWF( buf_type *& buf ) {}
 
 //-----------------------------------------
 //              Filter
@@ -582,18 +639,25 @@ void swf::Filter::fromSWF( buf_type *& buf ) {
             concreteFilter = new DropshadowFilter;
             break;
         case FILTER_BLUR:
+            concreteFilter = new BlurFilter;
             break;
         case FILTER_GLOW:
+            concreteFilter = new GlowFilter;
             break;
         case FILTER_BEVEL:
+            concreteFilter = new BevelFilter;
             break;
         case FILTER_GRADIENTGLOW:
+            concreteFilter = new GradientGlowFilter;
             break;
         case FILTER_CONVOLUTION:
+            concreteFilter = new ConvolutionFilter;
             break;
         case FILTER_COLORMATRIX:
+            concreteFilter = new ColorMatrixFilter;
             break;
         case FILTER_GRADIENTBEVEL:
+            concreteFilter = new GradientBevelFilter;
             break;
     }
 }
@@ -657,6 +721,8 @@ void swf::SWFHeader::fromSWF(buf_type *& buf) {
 	
 	buf += 3;//skip 'W' and 'F'
 	__version.fromSWF(buf);
+    _version = new MutableVersion;
+    _version -> setVersion(__version.getValue());
 	_fileLength.fromSWF(buf);
 }
 
@@ -682,6 +748,10 @@ bool swf::SWFHeader::compressed() {
 
 swf::U8 swf::SWFHeader::version() {
     return __version;
+}
+
+swf::MutableVersion * swf::SWFHeader::versionPtr() {
+    return _version;
 }
 
 swf::U32 swf::SWFHeader::fileLength() {
@@ -724,6 +794,8 @@ void swf::SetBackgroundColor::fromSWF(buf_type *& buf) {
 //-----------------------------------------
 //             26 PlaceObject2
 //-----------------------------------------
+swf::PlaceObject2::PlaceObject2(Version & version) : AbstractVTag(version), clipActions(version) {}
+
 void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     int i = 0;
     hasClipActions    = getUBits(buf, 1, i++);
@@ -772,6 +844,8 @@ void swf::FileAttributes::fromSWF(buf_type *& buf) {
 //-----------------------------------------
 //             70 PlaceObject3
 //-----------------------------------------
+swf::PlaceObject3::PlaceObject3(Version & version) : PlaceObject2(version) {}
+
 void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     int i = 0;
     hasClipActions    = getUBits(buf, 1, i++);
@@ -1039,6 +1113,10 @@ void swf::SWF::continueWith(buf_type *& buf) {
             case 70:
                 printf("%i PlaceObject3\n", tv);
                 buf += rh->length();
+                
+                //t = new PlaceObject3();
+                //t -> recordHeader = rh;
+                //t -> fromSWF(buf);
                 break;
             case 71:
                 printf("%i ImportAssets2\n", tv);

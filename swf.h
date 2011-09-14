@@ -334,6 +334,9 @@ namespace swf
 	//-----------------------------------------
     class ColorMatrixFilter : public AbstractData {
     public:
+        std::vector<U32 *> matrix;
+        
+        ColorMatrixFilter();
         virtual void fromSWF( buf_type *& buf );
     };
     
@@ -345,7 +348,7 @@ namespace swf
         U8 matrixY;
         U32 divisor;
         U32 bias;
-        U32 matrix;
+        std::vector<U32 *> matrix;
         RGB color;
         //reserved UB[6]
         bool clamp;
@@ -432,14 +435,53 @@ namespace swf
 	//              BevelFilter
 	//-----------------------------------------
     class BevelFilter : public AbstractData {
+    protected:
+        RGB shadowColor;
+        RGB highlightColor;
+        U32 blurX;
+        U32 blurY;
+        U32 angle;
+        U32 distance;
+        U16 strength;
+        bool innerShadow;
+        bool knockout;
+        bool compositeSource;
+        bool onTop;
+        unsigned short passes;//UB[4]
     public:
+        BevelFilter();
         virtual void fromSWF( buf_type *& buf );
+        
+        fixed_type getBlurX();
+        fixed_type getBlurY();
+        fixed_type getAngle();
+        fixed_type getDistance();
+        fixed8_type getStrength();
+        bool getInnerShadow();
+        bool getKnockout();
+        bool getCompositeSource();
+        bool getOnTop();
+        unsigned short getPasses();
     };
     
     //-----------------------------------------
 	//              GradientGlowFilter
 	//-----------------------------------------
     class GradientGlowFilter : public AbstractData {
+    protected:
+        U8 numColors;
+        std::vector<RGB *> colors;
+        std::vector<U8 *> ratios;
+        U32 blurX;
+        U32 blurY;
+        U32 angle;
+        U32 distance;
+        U16 strength;
+        bool innerShadow;
+        bool knockout;
+        bool compositeSource;
+        bool onTop;
+        unsigned short passes;//UB[4]
     public:
         virtual void fromSWF( buf_type *& buf );
     };
@@ -447,9 +489,10 @@ namespace swf
     //-----------------------------------------
 	//              GradientBevelFilter
 	//-----------------------------------------
-    class GradientBevelFilter : public AbstractData {
+    class GradientBevelFilter : public GradientGlowFilter {
     public:
-        virtual void fromSWF( buf_type *& buf );
+        /* identical to GradientGlowFilter. no override */
+        //virtual void fromSWF( buf_type *& buf );
     };
     
     //-----------------------------------------
@@ -529,6 +572,7 @@ namespace swf
 	class SWFHeader : public AbstractTag {
 		bool _compressed;
 		U8 __version;
+        MutableVersion * _version;
 		U32 _fileLength;
 		RECT _frameSize;
 		U16 _frameRate;
@@ -542,7 +586,7 @@ namespace swf
 		//
 		bool compressed();
         U8 version();
-        unsigned char * versionPtr();
+        MutableVersion * versionPtr();
 		U32	fileLength();
 		RECT frameSize();
         U16 frameRate();
@@ -584,7 +628,7 @@ namespace swf
     /*
      version: >= SWF 3
      */
-	class PlaceObject2 : public AbstractTag {
+	class PlaceObject2 : public AbstractVTag {
     protected:
         bool hasClipActions;//>= SWF 5
         bool hasClipDepth;
@@ -604,6 +648,7 @@ namespace swf
         U16 clipDepth;
         ClipActions clipActions;
 	public:
+        PlaceObject2(Version & version);
 		virtual void fromSWF(buf_type *& buf);
 	};
     
@@ -659,6 +704,7 @@ namespace swf
         //< ClipActions clipActions;
         
 	public:
+        PlaceObject3(Version & version);
 		virtual void fromSWF(buf_type *& buf);
 	};
 	
