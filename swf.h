@@ -564,6 +564,7 @@ namespace swf
 	class AbstractVTag : public AbstractTag, protected VersionRequirement {
 	public:
         AbstractVTag(Version & version);
+        virtual ~AbstractVTag() = 0;
 	};
 	
 	//-----------------------------------------
@@ -649,7 +650,7 @@ namespace swf
         ClipActions clipActions;
 	public:
         PlaceObject2(Version & version);
-		virtual void fromSWF(buf_type *& buf);
+        virtual void fromSWF(buf_type *& buf);
 	};
     
     //-----------------------------------------

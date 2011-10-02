@@ -98,6 +98,7 @@ swf::AbstractData::~AbstractData() {}
 swf::AbstractVData::AbstractVData(Version & version) : VersionRequirement(version) {}
 
 swf::AbstractVData::~AbstractVData() {}
+
 //-----------------------------------------
 //                   U8
 //-----------------------------------------
@@ -714,6 +715,13 @@ unsigned swf::RecordHeader::length() {
 swf::AbstractTag::~AbstractTag() {}
 
 //-----------------------------------------
+//                AbstractVTag
+//-----------------------------------------
+swf::AbstractVTag::AbstractVTag(Version & version) : VersionRequirement(version) {}
+
+swf::AbstractVTag::~AbstractVTag() {}
+
+//-----------------------------------------
 //                SWFHeader
 //-----------------------------------------
 void swf::SWFHeader::fromSWF(buf_type *& buf) {
@@ -795,6 +803,8 @@ void swf::SetBackgroundColor::fromSWF(buf_type *& buf) {
 //             26 PlaceObject2
 //-----------------------------------------
 swf::PlaceObject2::PlaceObject2(Version & version) : AbstractVTag(version), clipActions(version) {}
+
+//swf::PlaceObject2::~PlaceObject2() {}
 
 void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     int i = 0;
@@ -1114,9 +1124,9 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 printf("%i PlaceObject3\n", tv);
                 buf += rh->length();
                 
-                //t = new PlaceObject3();
-                //t -> recordHeader = rh;
-                //t -> fromSWF(buf);
+                t = new PlaceObject3(*header.versionPtr());
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 71:
                 printf("%i ImportAssets2\n", tv);
