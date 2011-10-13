@@ -213,6 +213,9 @@ namespace swf
         Twip translateY;
 	public:
 		virtual void fromSWF( buf_type *& buf );
+        
+        inline double xPrime(double x, double y);
+        inline double yPrime(double x, double y);
 	};
     
     //-----------------------------------------

@@ -1,38 +1,38 @@
 #include "swf.h"
 
 unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt = 0) {
-	unsigned int ret = 0;
-	unsigned int i = 0;
-	unsigned int pos;
-	unsigned int t;
-	unsigned int scale;
+    unsigned int ret = 0;
+    unsigned int i = 0;
+    unsigned int pos;
+    unsigned int t;
+    unsigned int scale;
 	
-	//pointer adjustment
-	buf += (unsigned int) floor(startAt / 8);
+    //pointer adjustment
+    buf += (unsigned int) floor(startAt / 8);
 	
-	//scaling
-	startAt = startAt % 8;
-	n = n % 32;
-	
-	do {
-		scale = (i + startAt) % 8;
+    //scaling
+    startAt = startAt % 8;
+    n = n % 32;
+    
+    do {
+        scale = (i + startAt) % 8;
 		
-		/* shift sizeof(char) * 8 - 1 scaled by i plus a starting position */
-		pos = 8 - 1 - scale;
-		if( i > 0 && scale == 0 )
-		{
-			buf++;
-		}
-		
-		t = *buf >> pos;
+        /* shift sizeof(char) * 8 - 1 scaled by i plus a starting position */
+        pos = 8 - 1 - scale;
+        if( i > 0 && scale == 0 )
+        {
+            buf++;
+        }
+        
+        t = *buf >> pos;
 		
 #ifdef DEBUG
-		//printf("%i", t & 1);
+        //printf("%i", t & 1);
 #endif
-		
-		ret <<= 1;
-		ret |= t & 1;
-	} while (++i < n);
+
+        ret <<= 1;
+        ret |= t & 1;
+    } while (++i < n);
 	
 #ifdef DEBUG
 	//printf("\n");
@@ -279,28 +279,32 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
     unsigned offset = 0;
     signed sTemp;
     
-    hasScale = getUBits(buf, 1, offset);
-    if ( hasScale ) {
+    hasScale = getUBits(buf, 1, offset++);/* HasScale UB[1] */
+    if ( hasScale )
+    {
         i = 0;
         
-        nScaleBits = (*buf >> 2) & 0x1f;
-        offset += 6;//HasScale UB[1] + NScaleBits UB[5]
+        /* NScaleBits UB[5] */
+        nScaleBits = getUBits(buf, 5, offset);
+        offset += 5;
         
-        sTemp = getSBits(buf, nScaleBits, offset + nScaleBits * i++);
+        sTemp = getUBits(buf, nScaleBits, offset + nScaleBits * i++);
         scaleX.setValue( sTemp );
         
-        sTemp = getSBits(buf, nScaleBits, offset + nScaleBits * i++);
+        sTemp = getUBits(buf, nScaleBits, offset + nScaleBits * i++);
         scaleY.setValue( sTemp );
         
         offset += nScaleBits * i;
     }
     
-    hasRotate = getUBits(buf, 1, offset);
-    if ( hasRotate ) {
+    hasRotate = getUBits(buf, 1, offset++);/* HasRotate UB[1] */
+    if ( hasRotate )
+    {
         i = 0;
         
-        nRotateBits = *buf & 0x7c;
-        offset += 6;//HasRotate UB[1] + NRotateBits UB[5]
+        /* NRotateBits UB[5] */
+        nRotateBits = getUBits(buf, 5, offset);
+        offset += 5;
         
         sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
         rotateSkew0.setValue( sTemp );
@@ -308,14 +312,15 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
         rotateSkew1.setValue( sTemp );
         
-        offset += nScaleBits * i;
+        offset += nRotateBits * i;
     }
     
     /* always has translation */
     i = 0;
     
-    nTranslateBits = *buf & 0x7c;
-    offset += 5;//NTranslateBits UB[5]
+    /* NTranslateBits UB[5] */
+    nTranslateBits = getUBits(buf, 5, offset);
+    offset += 5;
     
     if( nTranslateBits > 0 )
     {
@@ -327,8 +332,39 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         
         offset += nTranslateBits * i;   
     }
-    
+        
     buf += (unsigned) (1 + ceil(offset / (sizeof(*buf) * 8)));
+    
+#ifdef DEBUG
+/*    
+    printf("\t\tMATRIX\n");
+        printf("\t\t\t%i hasScale\n", hasScale);
+        printf("\t\t\t%i nScaleBits\n", nScaleBits);
+        if( hasScale )
+        {
+            printf("\t\t\t%f scaleX\n", scaleX.toFixed16());
+            printf("\t\t\t%f scaleY\n", scaleY.toFixed16());
+        }
+        printf("\t\t\t%i hasRotate\n", hasRotate);
+        printf("\t\t\t%i nRotateBits\n", nRotateBits);
+        if( hasRotate )
+        {
+            printf("\t\t\t%f rotateSkew0\n", rotateSkew0.toFixed16());
+            printf("\t\t\t%f rotateSkew1\n", rotateSkew1.toFixed16());
+        }
+        printf("\t\t\t%i nTranslateBits\n", nTranslateBits);
+        printf("\t\t\t%i translateX\n", translateX.toPX());
+        printf("\t\t\t%i translateY\n", translateY.toPX());
+*/
+#endif
+}
+
+double swf::MATRIX::xPrime(double x, double y) {
+    return x * scaleX.toFixed16() + y * rotateSkew1.toFixed16() + translateX.toPX();
+}
+
+double swf::MATRIX::yPrime(double x, double y) {
+    return x * rotateSkew0.toFixed16() + y * rotateSkew0.toFixed16() + translateY.toPX();
 }
 
 //-----------------------------------------
@@ -758,7 +794,7 @@ void swf::SWFHeader::continueWith(buf_type *& buf) {
 	_frameRate.fromSWF(buf);
 	_frameCount.fromSWF(buf);
 	
-	#ifdef DEBUG
+#ifdef DEBUG
     printf("SWFHeader\n");
     printf("\t%i compressed\n", _compressed);
     printf("\t%i version\n", __version.getValue());
@@ -766,7 +802,7 @@ void swf::SWFHeader::continueWith(buf_type *& buf) {
     //printf("\t%i frameSize\n", _frameSize.getValue());
 	printf("\t%f frameRate\n", _frameRate.toFixed8());
 	printf("\t%i frameCount\n", _frameCount.getValue());
-	#endif
+#endif
 }
 
 bool swf::SWFHeader::compressed() {
@@ -846,7 +882,7 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     if( hasName )           name.fromSWF(buf);
     if( hasClipDepth )      clipDepth.fromSWF(buf);
     if( hasClipActions )    clipActions.fromSWF(buf);
-    
+
 #ifdef DEBUG
     printf("26 PlaceObject2\n");
     printf("\t%i hasClipActions\n",    hasClipActions);
@@ -916,10 +952,27 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     if( hasRatio ) ratio.fromSWF(buf);
     if( hasName ) name.fromSWF(buf);
     if( hasClipDepth ) clipDepth.fromSWF(buf);
-    //if( hasFilterList ) surfaceFilterList.fromSWF(buf);
+    if( hasFilterList ) surfaceFilterList.fromSWF(buf);
     if( hasBlendMode ) blendMode.fromSWF(buf);
     if( hasCacheAsBitmap ) bitmapCache.fromSWF(buf);
     if( hasClipActions ) clipActions.fromSWF(buf);
+
+#ifdef DEBUG
+    printf("70 PlaceObject3\n");
+    printf("\t%i hasClipActions\n",    hasClipActions);
+    printf("\t%i hasClipDepth\n",      hasClipDepth);
+    printf("\t%i hasName\n",           hasName);
+    printf("\t%i hasRatio\n",          hasRatio);
+    printf("\t%i hasColorTransform\n", hasColorTransform);
+    printf("\t%i hasMatrix\n",         hasMatrix);
+    printf("\t%i hasCharacter\n",      hasCharacter);
+    printf("\t%i moves\n",             moves);
+    printf("\t%i hasImage\n",          hasImage);
+    printf("\t%i hasClassName\n",      hasClassName);
+    printf("\t%i hasCacheAsBitmap\n",  hasCacheAsBitmap);
+    printf("\t%i hasBlendMode\n",      hasBlendMode);
+    printf("\t%i hasFilterList\n",     hasFilterList);
+#endif
 }
 
 //-----------------------------------------
@@ -1152,8 +1205,8 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 t -> fromSWF(buf);
                 break;
             case 70:
-                printf("%i PlaceObject3\n", tv);
-                buf += rh->length();
+                //printf("%i PlaceObject3\n", tv);
+                //buf += rh->length();
                 
                 t = new PlaceObject3(*header.versionPtr());
                 t -> recordHeader = rh;
