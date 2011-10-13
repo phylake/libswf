@@ -27,7 +27,7 @@ unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt 
 		t = *buf >> pos;
 		
 #ifdef DEBUG
-		printf("%i", t & 1);
+		//printf("%i", t & 1);
 #endif
 		
 		ret <<= 1;
@@ -35,7 +35,7 @@ unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt 
 	} while (++i < n);
 	
 #ifdef DEBUG
-	printf("\n");
+	//printf("\n");
 #endif
 	
 	return ret;
@@ -279,7 +279,6 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
     unsigned offset = 0;
     signed sTemp;
     
-    hasScale = *buf & 0x80;
     hasScale = getUBits(buf, 1, offset);
     if ( hasScale ) {
         i = 0;
@@ -303,13 +302,33 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         nRotateBits = *buf & 0x7c;
         offset += 6;//HasRotate UB[1] + NRotateBits UB[5]
         
-        sTemp= getSBits(buf, nRotateBits, offset + nRotateBits * i++);
+        sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
         rotateSkew0.setValue( sTemp );
         
         sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
         rotateSkew1.setValue( sTemp );
+        
+        offset += nScaleBits * i;
     }
     
+    /* always has translation */
+    i = 0;
+    
+    nTranslateBits = *buf & 0x7c;
+    offset += 5;//NTranslateBits UB[5]
+    
+    if( nTranslateBits > 0 )
+    {
+        sTemp = getSBits(buf, nTranslateBits, offset + nTranslateBits * i++);
+        translateX.value = sTemp;
+        
+        sTemp = getSBits(buf, nTranslateBits, offset + nTranslateBits * i++);
+        translateY.value = sTemp;
+        
+        offset += nTranslateBits * i;   
+    }
+    
+    buf += (unsigned) (1 + ceil(offset / (sizeof(*buf) * 8)));
 }
 
 //-----------------------------------------
@@ -517,7 +536,7 @@ void swf::ConvolutionFilter::fromSWF( buf_type *& buf ) {
     clamp         = getUBits(buf, 1, 6);
     preserveAlpha = getUBits(buf, 1, 7);
     
-    buf += 8 / sizeof(*buf);
+    buf += 8 / (8 * sizeof(*buf));
 }
 
 //-----------------------------------------
@@ -529,7 +548,7 @@ void swf::BlurFilter::fromSWF( buf_type *& buf ) {
     
     passes = getUBits(buf, 5);
     
-    buf += 8 / sizeof(*buf);
+    buf += 8 / (8 * sizeof(*buf));
 }
 
 //-----------------------------------------
@@ -549,7 +568,7 @@ void swf::GlowFilter::fromSWF( buf_type *& buf ) {
     compositeSource = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 5, i);
     
-    buf += 8 / sizeof(*buf);
+    buf += 8 / (8 * sizeof(*buf));
 }
 
 //-----------------------------------------
@@ -571,7 +590,7 @@ void swf::DropshadowFilter::fromSWF( buf_type *& buf ) {
     compositeSource = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 5, i);
     
-    buf += 8 / sizeof(*buf);
+    buf += 8 / (8 * sizeof(*buf));
 }
 
 //-----------------------------------------
@@ -595,7 +614,7 @@ void swf::BevelFilter::fromSWF( buf_type *& buf ) {
     onTop           = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 4, i);
     
-    buf += 8 / sizeof(*buf);
+    buf += 8 / (8 * sizeof(*buf));
 }
 
 //-----------------------------------------
@@ -817,16 +836,28 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     hasCharacter      = getUBits(buf, 1, i++);
     moves             = getUBits(buf, 1, i++);
     
-    buf += i / sizeof(*buf);
+    buf++;
     
     depth.fromSWF(buf);
-    if( hasCharacter ) characterId.fromSWF(buf);
-    if( hasMatrix ) matrix.fromSWF(buf);
+    if( hasCharacter )      characterId.fromSWF(buf);
+    if( hasMatrix )         matrix.fromSWF(buf);
     if( hasColorTransform ) colorTransform.fromSWF(buf);
-    if( hasRatio ) ratio.fromSWF(buf);
-    if( hasName ) name.fromSWF(buf);
-    if( hasClipDepth ) clipDepth.fromSWF(buf);
-    if( hasClipActions ) clipActions.fromSWF(buf);
+    if( hasRatio )          ratio.fromSWF(buf);
+    if( hasName )           name.fromSWF(buf);
+    if( hasClipDepth )      clipDepth.fromSWF(buf);
+    if( hasClipActions )    clipActions.fromSWF(buf);
+    
+#ifdef DEBUG
+    printf("26 PlaceObject2\n");
+    printf("\t%i hasClipActions\n",    hasClipActions);
+    printf("\t%i hasClipDepth\n",      hasClipDepth);
+    printf("\t%i hasName\n",           hasName);
+    printf("\t%i hasRatio\n",          hasRatio);
+    printf("\t%i hasColorTransform\n", hasColorTransform);
+    printf("\t%i hasMatrix\n",         hasMatrix);
+    printf("\t%i hasCharacter\n",      hasCharacter);
+    printf("\t%i moves\n",             moves);
+#endif
 }
 
 //-----------------------------------------
@@ -875,7 +906,7 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     hasBlendMode      = getUBits(buf, 1, i++);
     hasFilterList     = getUBits(buf, 1, i++);
     
-    buf += i / sizeof(*buf);
+    buf += i / (8 * sizeof(*buf));
     
     depth.fromSWF(buf);
     if( hasClassName || (hasImage && hasCharacter) ) className.fromSWF(buf);
@@ -1017,12 +1048,12 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 buf += rh->length();
                 break;
             case 26:
-                printf("%i PlaceObject2\n", tv);
-                buf += rh->length();
+                //printf("%i PlaceObject2\n", tv);
+                //buf += rh->length();
                 
-                //t = new PlaceObject2;
-                //t -> recordHeader = rh;
-                //t -> fromSWF(buf);
+                t = new PlaceObject2(*header.versionPtr());
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 28:
                 printf("%i RemoveObject2\n", tv);

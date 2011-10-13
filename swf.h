@@ -208,9 +208,9 @@ namespace swf
         //
         //translation
         //
-        unsigned char nTranlateBits;
-        U32 translateX;
-        U32 translateY;
+        unsigned char nTranslateBits;
+        Twip translateX;
+        Twip translateY;
 	public:
 		virtual void fromSWF( buf_type *& buf );
 	};
