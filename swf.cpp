@@ -218,7 +218,7 @@ float swf::U32::toFloat() {
 //-----------------------------------------
 void swf::String::fromSWF( buf_type *& buf ) {
     value.assign((char *)buf);
-    buf += value.length();
+    buf += value.length() + 1;
 }
 
 //-----------------------------------------
@@ -333,7 +333,7 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         offset += nTranslateBits * i;   
     }
         
-    buf += (unsigned) (1 + ceil(offset / (sizeof(*buf) * 8)));
+    buf += (unsigned) (1 + ceil(offset / (sizeof(*buf) * 8)));//TODO try: * 8.0f or cast to float
     
 #ifdef DEBUG
 /*    
@@ -395,7 +395,7 @@ void swf::CXFORM::fromSWF(buf_type *& buf) {
         i += nBits;
     }
     
-    buf += (i / 8);
+    buf += (unsigned) (1 + ceil(i / (sizeof(*buf) * 8)));
 }
 
 //-----------------------------------------
@@ -430,7 +430,7 @@ void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
         i += nBits;
     }
     
-    buf += (i / 8);
+    buf += (unsigned) (1 + ceil(i / (sizeof(*buf) * 8)));
 }
 
 //-----------------------------------------
@@ -991,7 +991,7 @@ void swf::SWF::continueWith(buf_type *& buf) {
     std::vector<RecordHeader> vrh;
     RecordHeader * rh;
     
-    std:vector<AbstractTag> vt;
+    std::vector<AbstractTag> vt;
     AbstractTag * t;
     short tv;
     do {
@@ -1288,6 +1288,7 @@ void swf::SWF::continueWith(buf_type *& buf) {
         //t -> setVersion(<#unsigned char *version#>)
         
         vrh.push_back( *rh );
+        //vt.push_back( *t );
     } while ( rh->type() != 0 );
 }
 
