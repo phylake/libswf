@@ -6,7 +6,7 @@
 #include <zlib.h>
 
 #include "swf.h"
-#include "swfamf.h"
+#include "libswf.h"
 
 //static const unsigned int zlibBufferSize = 256000;//256K
 static const unsigned short int uncompressedBytes = 8;

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <vector.h>
-#include "swfamf.h"
+#include "libswf.h"
 #include "math.h"
 
 #define buf_type unsigned char
