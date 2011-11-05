@@ -1,3 +1,11 @@
+//
+//  swf.cpp
+//  libswf
+//
+//  Created by Brandon Cook on 11/5/11.
+//  Copyright 2011 Brandon Cook. All rights reserved.
+//
+
 #include "swf.h"
 
 unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt = 0) {
@@ -214,6 +222,83 @@ float swf::U32::toFloat() {
 }
 
 //-----------------------------------------
+//                   EU32
+//-----------------------------------------
+void swf::EU32::fromSWF( buf_type *& buf ) {    
+    value = buf[0];
+    
+    if (!(value & 0x00000080))
+    {
+        buf++;
+        return;
+    }
+    
+    value = (value & 0x0000007f) | buf[1]<<7;
+    if (!(value & 0x00004000))
+    {
+        buf += 2;
+        return;
+    }
+    
+    value = (value & 0x00003fff) | buf[2]<<14;
+    if (!(value & 0x00200000))
+    {
+        buf += 3;
+        return;
+    }
+    
+    value = (value & 0x001fffff) | buf[3]<<21;
+    if (!(value & 0x10000000))
+    {
+        buf += 4;
+        return;
+    }
+    
+    value = (value & 0x0fffffff) | buf[4]<<28;
+    buf += 5;
+}
+
+unsigned int swf::EU32::readAhead( buf_type * buf ) {
+    return
+    buf[0] <<  0 & 0x000000ff |
+    buf[1] <<  8 & 0x0000ff00 |
+    buf[2] << 16 & 0x00ff0000 |
+    buf[3] << 24 & 0xff000000
+    ;
+}
+
+unsigned int swf::EU32::getValue() {
+    return value;
+}
+
+void swf::EU32::setValue(unsigned int value) {
+    (*this).value = value;
+}
+
+fixed16_type swf::EU32::toFixed16() {
+    fixed16_type decimal = 0;
+    
+    if (value & 0x0000ffff)
+    {
+        /* divide by the maximum decimal precision that can be held in 16 bits */
+        decimal = (fixed16_type)(value & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
+    }
+    
+    return ((value & 0xffff0000) >> 16) + decimal;
+}
+
+/*
+ The spec's FIXED
+ */
+fixed_type swf::EU32::toFixed() {
+    return toFixed16();
+}
+
+float swf::EU32::toFloat() {
+    return *(float *)&value;
+}
+
+//-----------------------------------------
 //                 String
 //-----------------------------------------
 void swf::String::fromSWF( buf_type *& buf ) {
@@ -253,8 +338,7 @@ void swf::RECT::fromSWF( buf_type *& buf ) {
     yMin.value = getSBits(buf, nBits, 5 + nBits * i++);
     yMax.value = getSBits(buf, nBits, 5 + nBits * i++);
 
-    double shift = ceil( (5 + (double)(nBits * i)) / 8);
-    buf += (unsigned int)shift;
+    buf += (unsigned) ceil( (5 + (nBits * i)) / (sizeof(*buf) * 8.0f) );
 
 #ifdef DEBUG
     printf("i: %i\n", i);
@@ -263,7 +347,6 @@ void swf::RECT::fromSWF( buf_type *& buf ) {
     printf("xMax: %i\n", xMax.toPX());
     printf("yMin: %i\n", yMin.toPX());
     printf("yMax: %i\n", yMax.toPX());
-    printf("shift %f\n", shift);
 #endif
 }
 
@@ -333,7 +416,7 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         offset += nTranslateBits * i;
     }
 
-    buf += (unsigned) (1 + ceil(offset / (sizeof(*buf) * 8)));//TODO try: * 8.0f or cast to float
+    buf += (unsigned) ceil(offset / (sizeof(*buf) * 8.0f));
 
 #ifdef DEBUG
 /*
@@ -395,7 +478,7 @@ void swf::CXFORM::fromSWF(buf_type *& buf) {
         i += nBits;
     }
 
-    buf += (unsigned) (1 + ceil(i / (sizeof(*buf) * 8)));
+    buf += (unsigned) ceil(i / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -430,7 +513,7 @@ void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
         i += nBits;
     }
 
-    buf += (unsigned) (1 + ceil(i / (sizeof(*buf) * 8)));
+    buf += (unsigned) ceil(i / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -540,7 +623,7 @@ swf::ColorMatrixFilter::ColorMatrixFilter() : matrix(20) {
 
 void swf::ColorMatrixFilter::fromSWF( buf_type *& buf ) {
     U32 * t;
-    int i = matrix.size();
+    int i = (int)matrix.size();
     while( i-- ) {
         t = new U32;
         t -> fromSWF(buf);
@@ -572,7 +655,7 @@ void swf::ConvolutionFilter::fromSWF( buf_type *& buf ) {
     clamp         = getUBits(buf, 1, 6);
     preserveAlpha = getUBits(buf, 1, 7);
 
-    buf += 8 / (8 * sizeof(*buf));
+    buf += (unsigned) (8 / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -584,7 +667,7 @@ void swf::BlurFilter::fromSWF( buf_type *& buf ) {
 
     passes = getUBits(buf, 5);
 
-    buf += 8 / (8 * sizeof(*buf));
+    buf += (unsigned) (8 / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -604,7 +687,7 @@ void swf::GlowFilter::fromSWF( buf_type *& buf ) {
     compositeSource = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 5, i);
 
-    buf += 8 / (8 * sizeof(*buf));
+    buf += (unsigned) (8 / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -626,7 +709,7 @@ void swf::DropshadowFilter::fromSWF( buf_type *& buf ) {
     compositeSource = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 5, i);
 
-    buf += 8 / (8 * sizeof(*buf));
+    buf += (unsigned) (8 / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -650,7 +733,7 @@ void swf::BevelFilter::fromSWF( buf_type *& buf ) {
     onTop           = getUBits(buf, 1, i++);
     passes          = getUBits(buf, 4, i);
 
-    buf += 8 / (8 * sizeof(*buf));
+    buf += (unsigned) (8 / (sizeof(*buf) * 8.0f));
 }
 
 //-----------------------------------------
@@ -734,18 +817,52 @@ void swf::FilterList::fromSWF( buf_type *& buf ) {
 }
 
 //-----------------------------------------
+//             TagNameBase
+//-----------------------------------------
+void swf::TagNameBase::tagsFromSWF(buf_type *& buf) {
+    numSymbols.fromSWF(buf);
+    int i;
+    
+    i = (int)numSymbols.getValue();
+    U16 * tag;
+    String * name;
+    
+    while( i-- ) {
+        tag  = new U16;
+        name = new String;
+        
+        tag  -> fromSWF(buf);
+        name -> fromSWF(buf);
+        
+        tags.push_back(tag);
+        names.push_back(name);
+    }
+    
+#ifdef DEBUG
+    for (i = 0; i < tags.size(); i++) {
+        tag = tags[i];
+        name = names[i];
+        
+        printf("\t%i ", (int)tag->getValue());
+        printf(name->value.data());
+        printf("\n");
+    }
+#endif
+}
+
+//-----------------------------------------
 //                RecordHeader
 //-----------------------------------------
 void swf::RecordHeader::fromSWF( buf_type *& buf ) {
     tagCodeAndLength.fromSWF(buf);
-
+    
     tag = (tagCodeAndLength.getValue() >> 6) & 0x3ff;
-
+    
     /*
      check the last 6 bits of U16
      All 1's means this is a long header
      */
-
+    
     unsigned int shortLen = tagCodeAndLength.getValue() & 0x3f;
     if ( shortLen == 0x3f ) {
         isShort = false;
@@ -764,6 +881,7 @@ unsigned swf::RecordHeader::length() {
     return tagLength.getValue();
 }
 
+
 //-----------------------------------------
 //                AbstractTag
 //-----------------------------------------
@@ -775,6 +893,7 @@ swf::AbstractTag::~AbstractTag() {}
 swf::AbstractVTag::AbstractVTag(Version & version) : VersionRequirement(version) {}
 
 swf::AbstractVTag::~AbstractVTag() {}
+
 
 //-----------------------------------------
 //                SWFHeader
@@ -897,6 +1016,27 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
 }
 
 //-----------------------------------------
+//             56 ExportAssets
+//-----------------------------------------
+void swf::ExportAssets::fromSWF(buf_type *& buf) {
+#ifdef DEBUG
+    printf("56 ExportAssets\n");
+#endif
+    tagsFromSWF(buf);
+}
+
+//-----------------------------------------
+//             57 ImportAssets
+//-----------------------------------------
+void swf::ImportAssets::fromSWF(buf_type *& buf) {
+#ifdef DEBUG
+    printf("57 ImportAssets\n");
+#endif
+    url.fromSWF(buf);
+    tagsFromSWF(buf);
+}
+
+//-----------------------------------------
 //             69 FileAttributes
 //-----------------------------------------
 void swf::FileAttributes::fromSWF(buf_type *& buf) {
@@ -908,14 +1048,14 @@ void swf::FileAttributes::fromSWF(buf_type *& buf) {
 
     buf += 4;
 
-    #ifdef DEBUG
+#ifdef DEBUG
     printf("69 FileAttributes\n");
     printf("\t%i useDirectBlit\n", _useDirectBlit);
     printf("\t%i useGPU\n",        _useGPU);
     printf("\t%i hasMetadata\n",   _hasMetadata);
     printf("\t%i isAS3\n",         _isAS3);
     printf("\t%i useNetwork\n",    _useNetwork);
-    #endif
+#endif
 }
 
 //-----------------------------------------
@@ -942,7 +1082,7 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     hasBlendMode      = getUBits(buf, 1, i++);
     hasFilterList     = getUBits(buf, 1, i++);
 
-    buf += i / (8 * sizeof(*buf));
+    buf += (unsigned) (i / (sizeof(*buf) * 8.0f));
 
     depth.fromSWF(buf);
     if( hasClassName || (hasImage && hasCharacter) ) className.fromSWF(buf);
@@ -974,6 +1114,43 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     printf("\t%i hasFilterList\n",     hasFilterList);
 #endif
 }
+
+//-----------------------------------------
+//             71 ImportAssets2
+//-----------------------------------------
+void swf::ImportAssets2::fromSWF(buf_type *& buf) {
+#ifdef DEBUG
+    printf("71 ImportAssets2\n");
+#endif
+    
+    url.fromSWF(buf);
+    buf += 2;//reserved U8s
+    tagsFromSWF(buf);
+}
+
+//-----------------------------------------
+//             76 SymbolClass
+//-----------------------------------------
+void swf::SymbolClass::fromSWF(buf_type *& buf) {
+#ifdef DEBUG
+    printf("76 SymbolClass\n");
+#endif
+    
+    tagsFromSWF(buf);
+}
+
+//-----------------------------------------
+//           78 DefineScalingGrid
+//-----------------------------------------
+void swf::DefineScalingGrid::fromSWF(buf_type *& buf) {
+#ifdef DEBUG
+    printf("78 DefineScalingGrid\n");
+#endif
+
+    characterId.fromSWF(buf);
+    splitter.fromSWF(buf);
+}
+
 
 //-----------------------------------------
 //                  SWF
@@ -1157,12 +1334,20 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 buf += rh->length();
                 break;
             case 56:
-                printf("%i ExportAssets\n", tv);
-                buf += rh->length();
+                //printf("%i ExportAssets\n", tv);
+                //buf += rh->length();
+                
+                t = new ExportAssets;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 57:
-                printf("%i ImportAssets\n", tv);
-                buf += rh->length();
+                //printf("%i ImportAssets\n", tv);
+                //buf += rh->length();
+                
+                t = new ImportAssets;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 58:
                 printf("%i EnableDebugger\n", tv);
@@ -1213,8 +1398,12 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 t -> fromSWF(buf);
                 break;
             case 71:
-                printf("%i ImportAssets2\n", tv);
-                buf += rh->length();
+                //printf("%i ImportAssets2\n", tv);
+                //buf += rh->length();
+                
+                t = new ImportAssets2;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 73:
                 printf("%i DefineFontAlignZones\n", tv);
@@ -1229,16 +1418,24 @@ void swf::SWF::continueWith(buf_type *& buf) {
                 buf += rh->length();
                 break;
             case 76:
-                printf("%i SymbolClass\n", tv);
-                buf += rh->length();
+                //printf("%i SymbolClass\n", tv);
+                //buf += rh->length();
+                
+                t = new SymbolClass;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 77:
                 printf("%i Metadata\n", tv);
                 buf += rh->length();
                 break;
             case 78:
-                printf("%i DefineScalingGrid\n", tv);
-                buf += rh->length();
+                //printf("%i DefineScalingGrid\n", tv);
+                //buf += rh->length();
+                
+                t = new DefineScalingGrid;
+                t -> recordHeader = rh;
+                t -> fromSWF(buf);
                 break;
             case 82:
                 printf("%i DoABC\n", tv);

@@ -1,16 +1,18 @@
-#ifndef SWF_H
-#define SWF_H
+//
+//  swf.h
+//  libswf
+//
+//  Created by Brandon Cook on 11/5/11.
+//  Copyright 2011 Brandon Cook. All rights reserved.
+//
+
+#ifndef libswf_swf_h
+#define libswf_swf_h
 
 #include <stdio.h>
 #include <vector.h>
 #include "libswf.h"
 #include "math.h"
-
-#define buf_type unsigned char
-
-#define fixed8_type float
-#define fixed16_type double
-#define fixed_type fixed16_type
 
 namespace swf
 {
@@ -21,14 +23,14 @@ namespace swf
 
     //--------------------------------------------------------------
     //
-    //                         ABSTRACT BASE
+    //                         DATA TYPES
     //
     //--------------------------------------------------------------
 
     //----------------------------------------------------
     //                       Versioning
     //----------------------------------------------------
-
+    
     class Version {
     protected:
         unsigned char value;
@@ -36,20 +38,20 @@ namespace swf
         unsigned char version();
         unsigned short versionNum();
     };
-
+    
     class MutableVersion : public Version {
     public:
         void setVersion(unsigned char value);
         void setVersion(buf_type *& value);
     };
-
+    
     class VersionRequirement {
     protected:
         Version & _version;
     public:
         VersionRequirement(Version & version);
     };
-
+    
     //-----------------------------------------
     //                AbstractBase
     //-----------------------------------------
@@ -59,17 +61,7 @@ namespace swf
         //virtual void toSWF( buf_type *& buf ) = 0;
         virtual ~AbstractBase() = 0;
     };
-
-    //--------------------------------------------------------------
-    //
-    //                         DATA TYPES
-    //
-    //--------------------------------------------------------------
-
-    //----------------------------------------------------
-    //                       General
-    //----------------------------------------------------
-
+    
     //-----------------------------------------
     //                AbstractData
     //-----------------------------------------
@@ -77,7 +69,7 @@ namespace swf
     public:
         virtual ~AbstractData() = 0;
     };
-
+    
     //-----------------------------------------
     //         AbstractVData
     //-----------------------------------------
@@ -86,6 +78,10 @@ namespace swf
         AbstractVData(Version & version);
         virtual ~AbstractVData() = 0;
     };
+    
+    //----------------------------------------------------
+    //                       General
+    //----------------------------------------------------
 
     //-----------------------------------------
     //                   U8
@@ -127,13 +123,30 @@ namespace swf
         unsigned int getValue();
         void setValue(unsigned int value);
     };
+    
+    //-----------------------------------------
+    //                   EU32
+    //-----------------------------------------
+    class EU32 : public AbstractData {
+        unsigned int value;
+    public:
+        virtual void fromSWF( buf_type *& buf );
+        unsigned int readAhead( buf_type * buf );
+        
+        fixed16_type toFixed16();
+        fixed_type toFixed();
+        float toFloat();
+        
+        unsigned int getValue();
+        void setValue(unsigned int value);
+    };
 
     //-----------------------------------------
     //                 String
     //-----------------------------------------
     class String : public AbstractData {
-        std::string value;
     public:
+        std::string value;
         void virtual fromSWF( buf_type *& buf );
     };
 
@@ -266,7 +279,7 @@ namespace swf
     //----------------------------------------------------
     //                       DisplayList
     //----------------------------------------------------
-
+    
     //-----------------------------------------
     //              ClipEventFlags
     //-----------------------------------------
@@ -528,7 +541,7 @@ namespace swf
 
         virtual void fromSWF( buf_type *& buf );
     };
-
+    
     //--------------------------------------------------------------
     //
     //                             TAGS
@@ -548,7 +561,7 @@ namespace swf
         short int type();
         unsigned int length();
     };
-
+    
     //-----------------------------------------
     //                AbstractTag
     //-----------------------------------------
@@ -560,7 +573,7 @@ namespace swf
         RecordHeader * recordHeader;
         virtual ~AbstractTag() = 0;
     };
-
+    
     //-----------------------------------------
     //               AbstractVTag
     //-----------------------------------------
@@ -569,7 +582,7 @@ namespace swf
         AbstractVTag(Version & version);
         virtual ~AbstractVTag() = 0;
     };
-
+    
     //-----------------------------------------
     //                 SWFHeader
     //-----------------------------------------
@@ -655,6 +668,36 @@ namespace swf
         PlaceObject2(Version & version);
         virtual void fromSWF(buf_type *& buf);
     };
+    
+    //TODO put this somewhere else
+    //-----------------------------------------
+    //             TagNameBase
+    //-----------------------------------------
+    class TagNameBase : public AbstractTag {
+        U16 numSymbols;
+        std::vector<U16 *> tags;
+        std::vector<String *> names;
+    public:
+        virtual void tagsFromSWF(buf_type *& buf);
+    };
+    
+    //-----------------------------------------
+    //             56 ExportAssets
+    //-----------------------------------------
+    class ExportAssets : public TagNameBase {
+    public:
+        virtual void fromSWF(buf_type *& buf);
+    };
+    
+    //-----------------------------------------
+    //             57 ImportAssets
+    //-----------------------------------------
+    class ImportAssets : public TagNameBase {
+    public:
+        String url;
+        
+        virtual void fromSWF(buf_type *& buf);
+    };
 
     //-----------------------------------------
     //             69 FileAttributes
@@ -709,6 +752,36 @@ namespace swf
 
     public:
         PlaceObject3(Version & version);
+        virtual void fromSWF(buf_type *& buf);
+    };
+    
+    //-----------------------------------------
+    //             71 ImportAssets2
+    //-----------------------------------------
+    class ImportAssets2 : public ImportAssets {
+    public:
+        //reserved U8
+        //reserved U8
+        
+        virtual void fromSWF(buf_type *& buf);
+    };
+    
+    //-----------------------------------------
+    //             76 SymbolClass
+    //-----------------------------------------
+    class SymbolClass : public TagNameBase {
+    public:
+        virtual void fromSWF(buf_type *& buf);
+    };
+    
+    //-----------------------------------------
+    //           78 DefineScalingGrid
+    //-----------------------------------------
+    class DefineScalingGrid : public AbstractTag {
+    public:
+        U16 characterId;
+        RECT splitter;
+        
         virtual void fromSWF(buf_type *& buf);
     };
 

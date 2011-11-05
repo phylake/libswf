@@ -1,5 +1,11 @@
-#ifndef SWF_AMF_H
-#define SWF_AMF_H
+#ifndef libswf_libswf_h
+#define libswf_libswf_h
+
+#define buf_type unsigned char
+
+#define fixed8_type float
+#define fixed16_type double
+#define fixed_type fixed16_type
 
 //turn printf()s on
 #define DEBUG

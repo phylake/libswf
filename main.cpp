@@ -15,14 +15,12 @@ static void dumpBuf(unsigned char * const buf, unsigned int size) {
 	for (int i = 0; i < size; i++)
 	{
 		if (i > 0 && i % 16 == 0) {
-			printf("\n");
+			//printf("\n");
 		}
 		
-		//printf("%02x ", *(buf + i) & 0xFF);
-		//printf("%02x ", buf[i] & 0xFF);
-		printf("%02x ", buf[i]);
+		//printf("%02x ", buf[i]);
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 static int startWithFile(const char * file, char *& finalBuffer, unsigned int *& finalBufferLength) {
