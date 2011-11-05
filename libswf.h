@@ -16,4 +16,4 @@
 TypeName(const TypeName&);                 \
 void operator=(const TypeName&);
 
-#endif
+#endif //libswf_libswf_h
