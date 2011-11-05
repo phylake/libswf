@@ -1,11 +1,9 @@
 //
-//  data_basic.cpp
+//  data.cpp
 //  libswf
 //
 //  Created by Brandon Cook on 11/5/11.
 //  Copyright 2011 Brandon Cook. All rights reserved.
 //
 
-#include "data_basic.h"
-
-
+#include "data.h"
