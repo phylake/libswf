@@ -11,23 +11,26 @@
 
 #include <stdio.h>
 #include <vector.h>
-#include "libswf.h"
 #include "math.h"
-#include "data.h"
-#include "util.h"
-#include "control.h"
-#include "display_list.h"
-#include "actions.h"
 
-namespace swf
-{
+#include "libswf.h"
+#include "util.h"
+#include "data.h"
+#include "display_list.h"
+#include "control.h"
+#include "actions.h"
+#include "shapes.h"
+#include "gradients.h"
+
+namespace swf {
+    
     //-----------------------------------------
     //                 SWFHeader
     //-----------------------------------------
     class SWFHeader : public AbstractTag {
         bool _compressed;
-        U8 __version;
-        MutableVersion * _version;
+        U8 version__;
+        MutableVersion * version_;
         U32 _fileLength;
         RECT _frameSize;
         U16 _frameRate;

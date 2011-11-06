@@ -21,4 +21,4 @@ namespace swf
       signed getSBits(    char * ptr, unsigned int n, unsigned int startAt = 0);
 }
 
-#endif
+#endif //libswf_util_h

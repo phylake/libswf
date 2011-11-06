@@ -17,32 +17,32 @@ namespace swf {
     //              ClipEventFlags
     //-----------------------------------------
     class ClipEventFlags : public AbstractVData {
-    public:
-        bool keyUp;
-        bool keyDown;
-        bool mouseUp;
-        bool mouseDown;
-        bool mouseMove;
-        bool unload;
-        bool enterFrame;
-        bool load;
-        bool dragOver;
-        bool rollOut;
-        bool rollOver;
-        bool releaseOutside;
-        bool release;
-        bool press;
-        bool initialize;
-        bool data;
+        bool key_up_;
+        bool key_down_;
+        bool mouse_up_;
+        bool mouse_down_;
+        bool mouse_move_;
+        bool unload_;
+        bool enter_frame_;
+        bool load_;
+        bool drag_over_;
+        bool roll_out_;
+        bool roll_over_;
+        bool release_outside_;
+        bool release_;
+        bool press_;
+        bool initialize_;
+        bool data_;
         
         //below this line: swf >= 6
         
         //reserved UB[5]
-        bool construct;
-        bool keyPress;
-        bool dragOut;
+        bool construct_;
+        bool key_press_;
+        bool drag_out_;
         //reserved UB[8]
         
+    public:
         ClipEventFlags(Version & version);
         virtual void fromSWF( buf_type *& buf );
     };
@@ -51,12 +51,11 @@ namespace swf {
     //              ClipActionRecord
     //-----------------------------------------
     class ClipActionRecord : public AbstractVData {
+        ClipEventFlags event_flags_;
+        U32 size_;
+        U8 key_code_;
+        std::vector<ActionRecord *> actions_;
     public:
-        ClipEventFlags eventFlags;
-        U32 size;
-        U8 keyCode;
-        std::vector<ActionRecord *> actions;
-        
         ClipActionRecord(Version & version);
         virtual void fromSWF( buf_type *& buf );
     };
@@ -68,11 +67,11 @@ namespace swf {
     protected:
         bool isEnd( buf_type * buf );
     public:
-        U16 reserved;
-        ClipEventFlags allEventFlags;
-        std::vector<ClipActionRecord *> records;
-        U16 endFlag5;
-        U32 endFlag6;
+        U16 reserved_;
+        ClipEventFlags all_event_flags_;
+        std::vector<ClipActionRecord *> records_;
+        U16 end_flag5_;
+        U32 end_flag6_;
         
         ClipActions(Version & version);
         virtual void fromSWF( buf_type *& buf );
@@ -83,7 +82,7 @@ namespace swf {
     //-----------------------------------------
     class ColorMatrixFilter : public AbstractData {
     public:
-        std::vector<U32 *> matrix;
+        std::vector<U32 *> matrix_;
         
         ColorMatrixFilter();
         virtual void fromSWF( buf_type *& buf );
@@ -93,15 +92,15 @@ namespace swf {
     //              ConvolutionFilter
     //-----------------------------------------
     class ConvolutionFilter : public AbstractData {
-        U8 matrixX;
-        U8 matrixY;
-        U32 divisor;
-        U32 bias;
-        std::vector<U32 *> matrix;
-        RGB color;
+        U8 matrix_x_;
+        U8 matrix_y_;
+        U32 divisor_;
+        U32 bias_;
+        std::vector<U32 *> matrix_;
+        RGB color_;
         //reserved UB[6]
-        bool clamp;
-        bool preserveAlpha;
+        bool clamp_;
+        bool preserve_alpha_;
     public:
         ConvolutionFilter();
         virtual void fromSWF( buf_type *& buf );
@@ -112,16 +111,16 @@ namespace swf {
     //-----------------------------------------
     class BlurFilter : public AbstractData {
     protected:
-        U32 blurX;
-        U32 blurY;
-        unsigned short passes;//UB[5]
+        U32 blur_x_;
+        U32 blur_y_;
+        unsigned short passes_;//UB[5]
         //reserved UB[3]
     public:
         virtual void fromSWF( buf_type *& buf );
         
-        fixed_type getBlurX();
-        fixed_type getBlurY();
-        unsigned short getPasses();
+        fixed_type blur_x() const;
+        fixed_type blur_y() const;
+        unsigned short passes() const;
     };
     
     //-----------------------------------------
@@ -130,24 +129,24 @@ namespace swf {
     class GlowFilter : public AbstractData {
     protected:
         RGB color;
-        U32 blurX;
-        U32 blurY;
-        U16 strength;
-        bool innerShadow;
-        bool knockout;
-        bool compositeSource;
-        unsigned short passes;//UB[5]
+        U32 blur_x_;
+        U32 blur_y_;
+        U16 strength_;
+        bool inner_shadow_;
+        bool knockout_;
+        bool composite_source_;
+        unsigned short passes_;//UB[5]
     public:
         GlowFilter();
         virtual void fromSWF( buf_type *& buf );
         
-        fixed_type getBlurX();
-        fixed_type getBlurY();
-        fixed8_type getStrength();
-        bool getInnerShadow();
-        bool getKnockout();
-        bool getCompositeSource();
-        unsigned short getPasses();
+        fixed_type blur_x();
+        fixed_type blur_y();
+        fixed8_type strength();
+        bool inner_shadow();
+        bool knockout();
+        bool composite_source();
+        unsigned short passes();
     };
     
     //-----------------------------------------
@@ -156,28 +155,28 @@ namespace swf {
     class DropshadowFilter : public AbstractData {
     protected:
         RGB color;
-        U32 blurX;
-        U32 blurY;
-        U32 angle;
-        U32 distance;
-        U16 strength;
-        bool innerShadow;
-        bool knockout;
-        bool compositeSource;
-        unsigned short passes;//UB[5]
+        U32 blur_x_;
+        U32 blur_y_;
+        U32 angle_;
+        U32 distance_;
+        U16 strength_;
+        bool inner_shadow_;
+        bool knockout_;
+        bool composite_source_;
+        unsigned short passes_;//UB[5]
     public:
         DropshadowFilter();
         virtual void fromSWF( buf_type *& buf );
         
-        fixed_type getBlurX();
-        fixed_type getBlurY();
-        fixed_type getAngle();
-        fixed_type getDistance();
-        fixed8_type getStrength();
-        bool getInnerShadow();
-        bool getKnockout();
-        bool getCompositeSource();
-        unsigned short getPasses();
+        fixed_type blur_x() const;
+        fixed_type blur_y() const;
+        fixed_type angle() const;
+        fixed_type distance() const;
+        fixed8_type strength() const;
+        bool inner_shadow() const;
+        bool knockout() const;
+        bool composite_source() const;
+        unsigned short passes() const;
     };
     
     //-----------------------------------------
@@ -187,30 +186,30 @@ namespace swf {
     protected:
         RGB shadowColor;
         RGB highlightColor;
-        U32 blurX;
-        U32 blurY;
-        U32 angle;
-        U32 distance;
-        U16 strength;
-        bool innerShadow;
-        bool knockout;
-        bool compositeSource;
-        bool onTop;
-        unsigned short passes;//UB[4]
+        U32 blur_x_;
+        U32 blur_y_;
+        U32 angle_;
+        U32 distance_;
+        U16 strength_;
+        bool inner_shadow_;
+        bool knockout_;
+        bool composite_source_;
+        bool on_top_;
+        unsigned short passes_;//UB[4]
     public:
         BevelFilter();
         virtual void fromSWF( buf_type *& buf );
         
-        fixed_type getBlurX();
-        fixed_type getBlurY();
-        fixed_type getAngle();
-        fixed_type getDistance();
-        fixed8_type getStrength();
-        bool getInnerShadow();
-        bool getKnockout();
-        bool getCompositeSource();
-        bool getOnTop();
-        unsigned short getPasses();
+        fixed_type getblur_x_() const;
+        fixed_type blur_y() const;
+        fixed_type angle() const;
+        fixed_type distance() const;
+        fixed8_type strength() const;
+        bool inner_shadow() const;
+        bool knockout() const;
+        bool composite_source() const;
+        bool on_top() const;
+        unsigned short passes() const;
     };
     
     //-----------------------------------------
@@ -218,19 +217,19 @@ namespace swf {
     //-----------------------------------------
     class GradientGlowFilter : public AbstractData {
     protected:
-        U8 numColors;
-        std::vector<RGB *> colors;
+        U8 num_colors_;
+        std::vector<RGB *> colors_;
         std::vector<U8 *> ratios;
-        U32 blurX;
-        U32 blurY;
+        U32 blur_x_;
+        U32 blur_y_;
         U32 angle;
         U32 distance;
-        U16 strength;
-        bool innerShadow;
-        bool knockout;
-        bool compositeSource;
-        bool onTop;
-        unsigned short passes;//UB[4]
+        U16 strength_;
+        bool inner_shadow_;
+        bool knockout_;
+        bool composite_source_;
+        bool on_top_;
+        unsigned short passes_;//UB[4]
     public:
         virtual void fromSWF( buf_type *& buf );
     };
@@ -258,8 +257,8 @@ namespace swf {
         unsigned short static const FILTER_COLORMATRIX   = 6;
         unsigned short static const FILTER_GRADIENTBEVEL = 7;
         
-        U8 filterId;
-        AbstractData * concreteFilter;
+        U8 filter_id_;
+        AbstractData * concrete_filter_;
         
         virtual void fromSWF( buf_type *& buf );
     };

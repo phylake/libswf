@@ -15,9 +15,9 @@ void swf::SWFHeader::fromSWF(buf_type *& buf) {
     _compressed = buf[0] == 'C';
 
     buf += 3;//skip 'W' and 'F'
-    __version.fromSWF(buf);
-    _version = new MutableVersion;
-    _version -> setVersion(__version.getValue());
+    version__.fromSWF(buf);
+    version_ = new MutableVersion;
+    version_ -> set_version(version__.value());
     _fileLength.fromSWF(buf);
 }
 
@@ -29,11 +29,11 @@ void swf::SWFHeader::continueWith(buf_type *& buf) {
 #ifdef DEBUG
     printf("SWFHeader\n");
     printf("\t%i compressed\n", _compressed);
-    printf("\t%i version\n", __version.getValue());
-    printf("\t%i fileLength\n", _fileLength.getValue());
-    //printf("\t%i frameSize\n", _frameSize.getValue());
+    printf("\t%i version\n", version__.value());
+    printf("\t%i fileLength\n", _fileLength.value());
+    //printf("\t%i frameSize\n", _frameSize.value());
     printf("\t%f frameRate\n", _frameRate.toFixed8());
-    printf("\t%i frameCount\n", _frameCount.getValue());
+    printf("\t%i frameCount\n", _frameCount.value());
 #endif
 }
 
@@ -42,11 +42,11 @@ bool swf::SWFHeader::compressed() {
 }
 
 swf::U8 swf::SWFHeader::version() {
-    return __version;
+    return version__;
 }
 
 swf::MutableVersion * swf::SWFHeader::versionPtr() {
-    return _version;
+    return version_;
 }
 
 swf::U32 swf::SWFHeader::fileLength() {
@@ -599,7 +599,7 @@ void swf::SWF::continueWith(buf_type *& buf) {
 
         //t -> recordHeader = rh;
         //t -> fromSWF(buf);
-        //t -> setVersion(<#unsigned char *version#>)
+        //t -> set_version(<#unsigned char *version#>)
 
         //vrh.push_back( *rh );
         vt.push_back( t );

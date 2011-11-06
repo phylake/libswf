@@ -12,13 +12,13 @@
 //              ActionRecord
 //-----------------------------------------
 void swf::ActionRecord::fromSWF( buf_type *& buf ) {
-    actionCode.fromSWF(buf);
-    if ( actionCode.getValue() >= 0x80 ) {
-        length.fromSWF(buf);
-        buf += length.getValue();
+    action_code_.fromSWF(buf);
+    if ( action_code_.value() >= 0x80 ) {
+        length_.fromSWF(buf);
+        buf += length_.value();
     }
 }
 
 unsigned swf::ActionRecord::getTotalLength() {
-    return 1 + 2 + length.getValue();
+    return 1 + 2 + length_.value();
 }

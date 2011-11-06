@@ -22,21 +22,21 @@ namespace swf {
     
     class Version {
     protected:
-        unsigned char value;
+        unsigned char value_;
     public:
-        unsigned char version();
-        unsigned short versionNum();
+        unsigned char version() const;
+        unsigned short version_num() const;
     };
     
     class MutableVersion : public Version {
     public:
-        void setVersion(unsigned char value);
-        void setVersion(buf_type *& value);
+        void set_version(unsigned char value);
+        void set_version(buf_type *& value);
     };
     
     class VersionRequirement {
     protected:
-        Version & _version;
+        Version & version_;
     public:
         VersionRequirement(Version & version);
     };
@@ -76,22 +76,22 @@ namespace swf {
     //                   U8
     //-----------------------------------------
     class U8 : public AbstractData {
-        unsigned char value;
+        unsigned char value_;
     public:
         virtual void fromSWF( buf_type *& buf );
         unsigned char readAhead( buf_type * buf );
-        unsigned char getValue();
+        unsigned char value();
     };
     
     //-----------------------------------------
     //                   U16
     //-----------------------------------------
     class U16 : public AbstractData {
-        unsigned short int value;
+        unsigned short int value_;
     public:
         virtual void fromSWF( buf_type *& buf );
         unsigned short readAhead( buf_type * buf );
-        unsigned short int getValue();
+        unsigned short int value();
         double toFixed8();
         float toFloat();
     };
@@ -100,7 +100,7 @@ namespace swf {
     //                   U32
     //-----------------------------------------
     class U32 : public AbstractData {
-        unsigned int value;
+        unsigned int value_;
     public:
         virtual void fromSWF( buf_type *& buf );
         unsigned int readAhead( buf_type * buf );
@@ -109,15 +109,15 @@ namespace swf {
         fixed_type toFixed();
         float toFloat();
         
-        unsigned int getValue();
-        void setValue(unsigned int value);
+        unsigned int value();
+        void set_value(unsigned int value);
     };
     
     //-----------------------------------------
     //                   EU32
     //-----------------------------------------
     class EU32 : public AbstractData {
-        unsigned int value;
+        unsigned int value_;
     public:
         virtual void fromSWF( buf_type *& buf );
         unsigned int readAhead( buf_type * buf );
@@ -126,8 +126,8 @@ namespace swf {
         fixed_type toFixed();
         float toFloat();
         
-        unsigned int getValue();
-        void setValue(unsigned int value);
+        unsigned int value();
+        void set_value(unsigned int value);
     };
     
     //-----------------------------------------
@@ -135,7 +135,7 @@ namespace swf {
     //-----------------------------------------
     class String : public AbstractData {
     public:
-        std::string value;
+        std::string value_;
         void virtual fromSWF( buf_type *& buf );
     };
     
@@ -145,7 +145,7 @@ namespace swf {
     class Twip {
         
     public:
-        signed int value;
+        signed int value_;
         signed int toPX();
     };
     
@@ -153,8 +153,8 @@ namespace swf {
     //                   RGB
     //-----------------------------------------
     class RGB : public AbstractData {
-        U32 value;
-        int type;
+        U32 value_;
+        int type_;
     public:
         short static const TYPE_ARGB  = -1;
         short static const  TYPE_RGB  =  0;

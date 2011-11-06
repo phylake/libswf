@@ -11,24 +11,24 @@
 //----------------------------------------------------
 //                       Versioning
 //----------------------------------------------------
-unsigned char swf::Version::version() {
-    return value;
+unsigned char swf::Version::version() const {
+    return value_;
 }
 
-unsigned short swf::Version::versionNum() {
-    return (unsigned short)value;
+unsigned short swf::Version::version_num() const {
+    return (unsigned short)value_;
 }
 
-void swf::MutableVersion::setVersion(unsigned char version) {
-    value = version;
+void swf::MutableVersion::set_version(unsigned char version) {
+    value_ = version;
 }
 
-void swf::MutableVersion::setVersion(buf_type *& buf) {
-    setVersion(*buf);
+void swf::MutableVersion::set_version(buf_type *& buf) {
+    set_version(*buf);
     buf++;
 }
 
-swf::VersionRequirement::VersionRequirement(Version & version) : _version(version) {}
+swf::VersionRequirement::VersionRequirement(Version & version) : version_(version) {}
 
 //-----------------------------------------
 //                 AbstractBase
@@ -51,7 +51,7 @@ swf::AbstractVData::~AbstractVData() {}
 //                   U8
 //-----------------------------------------
 void swf::U8::fromSWF( buf_type *& buf ) {
-    value = buf[0] & 0x000000ff;
+    value_ = buf[0] & 0x000000ff;
     buf++;
 }
 
@@ -59,15 +59,15 @@ unsigned char swf::U8::readAhead( buf_type * buf ) {
     return buf[0] & 0x000000ff;
 }
 
-unsigned char swf::U8::getValue() {
-    return value;
+unsigned char swf::U8::value() {
+    return value_;
 }
 
 //-----------------------------------------
 //                   U16
 //-----------------------------------------
 void swf::U16::fromSWF( buf_type *& buf ) {
-    value =
+    value_ =
     buf[0] << 0 & 0x000000ff |
     buf[1] << 8 & 0x0000ff00
     ;
@@ -81,27 +81,27 @@ unsigned short swf::U16::readAhead( buf_type * buf ) {
     ;
 }
 
-unsigned short int swf::U16::getValue() {
-    return value;
+unsigned short int swf::U16::value() {
+    return value_;
 }
 
 double swf::U16::toFixed8() {
     double decimal = 0;
     
-    if (value & 0x00ff)
+    if (value_ & 0x00ff)
     {
         /* divide by the maximum decimal precision that can be held in 8 bits */
-        decimal = (double)(value & 0x00ff) / pow(10, ceil(log10(pow(2, 8))));
+        decimal = (double)(value_ & 0x00ff) / pow(10, ceil(log10(pow(2, 8))));
     }
     
-    return ((value & 0xff00) >> 8) + decimal;
+    return ((value_ & 0xff00) >> 8) + decimal;
 }
 
 float swf::U16::toFloat() {
     unsigned ret = 0;
-    //int s = (value << 16) & 0x80000000;
-    //int e = (value >> 10) & 0x1f;
-    //int m = value & 0x3ff;
+    //int s = (value_ << 16) & 0x80000000;
+    //int e = (value_ >> 10) & 0x1f;
+    //int m = value_ & 0x3ff;
     
     
     
@@ -112,7 +112,7 @@ float swf::U16::toFloat() {
 //                   U32
 //-----------------------------------------
 void swf::U32::fromSWF( buf_type *& buf ) {
-    value =
+    value_ =
     buf[0] <<  0 & 0x000000ff |
     buf[1] <<  8 & 0x0000ff00 |
     buf[2] << 16 & 0x00ff0000 |
@@ -130,24 +130,24 @@ unsigned int swf::U32::readAhead( buf_type * buf ) {
     ;
 }
 
-unsigned int swf::U32::getValue() {
-    return value;
+unsigned int swf::U32::value() {
+    return value_;
 }
 
-void swf::U32::setValue(unsigned int value) {
-    (*this).value = value;
+void swf::U32::set_value(unsigned int value) {
+    value_ = value;
 }
 
 fixed16_type swf::U32::toFixed16() {
     fixed16_type decimal = 0;
     
-    if (value & 0x0000ffff)
+    if (value_ & 0x0000ffff)
     {
         /* divide by the maximum decimal precision that can be held in 16 bits */
-        decimal = (fixed16_type)(value & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
+        decimal = (fixed16_type)(value_ & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
     }
     
-    return ((value & 0xffff0000) >> 16) + decimal;
+    return ((value_ & 0xffff0000) >> 16) + decimal;
 }
 
 /*
@@ -158,43 +158,43 @@ fixed_type swf::U32::toFixed() {
 }
 
 float swf::U32::toFloat() {
-    return *(float *)&value;
+    return *(float *)&value_;
 }
 
 //-----------------------------------------
 //                   EU32
 //-----------------------------------------
 void swf::EU32::fromSWF( buf_type *& buf ) {    
-    value = buf[0];
+    value_ = buf[0];
     
-    if (!(value & 0x00000080))
+    if (!(value_ & 0x00000080))
     {
         buf++;
         return;
     }
     
-    value = (value & 0x0000007f) | buf[1]<<7;
-    if (!(value & 0x00004000))
+    value_ = (value_ & 0x0000007f) | buf[1]<<7;
+    if (!(value_ & 0x00004000))
     {
         buf += 2;
         return;
     }
     
-    value = (value & 0x00003fff) | buf[2]<<14;
-    if (!(value & 0x00200000))
+    value_ = (value_ & 0x00003fff) | buf[2]<<14;
+    if (!(value_ & 0x00200000))
     {
         buf += 3;
         return;
     }
     
-    value = (value & 0x001fffff) | buf[3]<<21;
-    if (!(value & 0x10000000))
+    value_ = (value_ & 0x001fffff) | buf[3]<<21;
+    if (!(value_ & 0x10000000))
     {
         buf += 4;
         return;
     }
     
-    value = (value & 0x0fffffff) | buf[4]<<28;
+    value_ = (value_ & 0x0fffffff) | buf[4]<<28;
     buf += 5;
 }
 
@@ -207,24 +207,24 @@ unsigned int swf::EU32::readAhead( buf_type * buf ) {
     ;
 }
 
-unsigned int swf::EU32::getValue() {
-    return value;
+unsigned int swf::EU32::value() {
+    return value_;
 }
 
-void swf::EU32::setValue(unsigned int value) {
-    (*this).value = value;
+void swf::EU32::set_value(unsigned int value) {
+    value_ = value;
 }
 
 fixed16_type swf::EU32::toFixed16() {
     fixed16_type decimal = 0;
     
-    if (value & 0x0000ffff)
+    if (value_ & 0x0000ffff)
     {
         /* divide by the maximum decimal precision that can be held in 16 bits */
-        decimal = (fixed16_type)(value & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
+        decimal = (fixed16_type)(value_ & 0x0000ffff) / pow(10, ceil(log10(pow(2, 16))));
     }
     
-    return ((value & 0xffff0000) >> 16) + decimal;
+    return ((value_ & 0xffff0000) >> 16) + decimal;
 }
 
 /*
@@ -235,35 +235,35 @@ fixed_type swf::EU32::toFixed() {
 }
 
 float swf::EU32::toFloat() {
-    return *(float *)&value;
+    return *(float *)&value_;
 }
 
 //-----------------------------------------
 //                 String
 //-----------------------------------------
 void swf::String::fromSWF( buf_type *& buf ) {
-    value.assign((char *)buf);
-    buf += value.length() + 1;
+    value_.assign((char *)buf);
+    buf += value_.length() + 1;
 }
 
 //-----------------------------------------
 //                   Twip
 //-----------------------------------------
 signed int swf::Twip::toPX() {
-    return value/20;
+    return value_/20;
 }
 
 //-----------------------------------------
 //                   RGB
 //-----------------------------------------
 swf::RGB::RGB( int type ) {
-    (*this).type = type;
+    type_ = type;
 }
 
 void swf::RGB::fromSWF( buf_type *& buf ) {
-    value.fromSWF(buf);
+    value_.fromSWF(buf);
     
-    if( type == 0 ) buf--;//only 3 bytes were relevant
+    if( type_ == 0 ) buf--;//only 3 bytes were relevant
 }
 
 //-----------------------------------------
@@ -273,10 +273,10 @@ void swf::RECT::fromSWF( buf_type *& buf ) {
     int i = 0;
     
     nBits      = getUBits(buf, 5);
-    xMin.value = getSBits(buf, nBits, 5 + nBits * i++);
-    xMax.value = getSBits(buf, nBits, 5 + nBits * i++);
-    yMin.value = getSBits(buf, nBits, 5 + nBits * i++);
-    yMax.value = getSBits(buf, nBits, 5 + nBits * i++);
+    xMin.value_ = getSBits(buf, nBits, 5 + nBits * i++);
+    xMax.value_ = getSBits(buf, nBits, 5 + nBits * i++);
+    yMin.value_ = getSBits(buf, nBits, 5 + nBits * i++);
+    yMax.value_ = getSBits(buf, nBits, 5 + nBits * i++);
     
     buf += (unsigned) ceil( (5 + (nBits * i)) / (sizeof(*buf) * 8.0f) );
     
@@ -312,10 +312,10 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         offset += 5;
         
         sTemp = getUBits(buf, nScaleBits, offset + nScaleBits * i++);
-        scaleX.setValue( sTemp );
+        scaleX.set_value( sTemp );
         
         sTemp = getUBits(buf, nScaleBits, offset + nScaleBits * i++);
-        scaleY.setValue( sTemp );
+        scaleY.set_value( sTemp );
         
         offset += nScaleBits * i;
     }
@@ -330,10 +330,10 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
         offset += 5;
         
         sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
-        rotateSkew0.setValue( sTemp );
+        rotateSkew0.set_value( sTemp );
         
         sTemp = getSBits(buf, nRotateBits, offset + nRotateBits * i++);
-        rotateSkew1.setValue( sTemp );
+        rotateSkew1.set_value( sTemp );
         
         offset += nRotateBits * i;
     }
@@ -348,10 +348,10 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
     if( nTranslateBits > 0 )
     {
         sTemp = getSBits(buf, nTranslateBits, offset + nTranslateBits * i++);
-        translateX.value = sTemp;
+        translateX.value_ = sTemp;
         
         sTemp = getSBits(buf, nTranslateBits, offset + nTranslateBits * i++);
-        translateY.value = sTemp;
+        translateY.value_ = sTemp;
         
         offset += nTranslateBits * i;
     }
@@ -462,20 +462,20 @@ void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
 void swf::RecordHeader::fromSWF( buf_type *& buf ) {
     tagCodeAndLength.fromSWF(buf);
     
-    tag = (tagCodeAndLength.getValue() >> 6) & 0x3ff;
+    tag = (tagCodeAndLength.value() >> 6) & 0x3ff;
     
     /*
      check the last 6 bits of U16
      All 1's means this is a long header
      */
     
-    unsigned int shortLen = tagCodeAndLength.getValue() & 0x3f;
+    unsigned int shortLen = tagCodeAndLength.value() & 0x3f;
     if ( shortLen == 0x3f ) {
         isShort = false;
         tagLength.fromSWF( buf );
     } else {
         isShort = true;
-        tagLength.setValue( shortLen );
+        tagLength.set_value( shortLen );
     }
 }
 
@@ -484,7 +484,7 @@ short int swf::RecordHeader::type() {
 }
 
 unsigned swf::RecordHeader::length() {
-    return tagLength.getValue();
+    return tagLength.value();
 }
 
 

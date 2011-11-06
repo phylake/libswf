@@ -83,7 +83,7 @@ static int startWithFile(const char * file, char *& finalBuffer, unsigned int *&
 	//zlib
 	//
 	
-	unsigned int OUT_SIZE = swf.header.fileLength().getValue();
+	unsigned int OUT_SIZE = swf.header.fileLength().value();
 	unsigned char outBuf[OUT_SIZE - uncompressedBytes];//known uncompressed size - already uncompressed bytes
 	
 	if ( swf.header.compressed() ) {

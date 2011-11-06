@@ -17,8 +17,8 @@ namespace swf {
     //-----------------------------------------
     class ActionRecord : public AbstractData {
     public:
-        U8 actionCode;
-        U16 length;
+        U8 action_code_;
+        U16 length_;
         
         virtual void fromSWF( buf_type *& buf );
         unsigned getTotalLength();
