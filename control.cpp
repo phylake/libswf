@@ -30,7 +30,7 @@ void swf::TagNameBase::tagsFromSWF(buf_type *& buf) {
         names.push_back(name);
     }
     
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     for (i = 0; i < tags.size(); i++) {
         tag = tags[i];
         name = names[i];

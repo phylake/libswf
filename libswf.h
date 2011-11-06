@@ -8,7 +8,7 @@
 #define fixed_type fixed16_type
 
 //turn printf()s on
-#define DEBUG
+#define LIBSWF_DEBUG
 
 // A macro to disallow the copy constructor and operator= functions
 // This should be used in the private: declarations for a class

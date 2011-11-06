@@ -262,28 +262,28 @@ void swf::Filter::fromSWF( buf_type *& buf ) {
     filter_id_.fromSWF(buf);
     
     switch ((unsigned short)filter_id_.value()) {
-        case FILTER_DROPSHADOW:
+        case kDropShadow:
             concrete_filter_ = new DropshadowFilter;
             break;
-        case FILTER_BLUR:
+        case kBlur:
             concrete_filter_ = new BlurFilter;
             break;
-        case FILTER_GLOW:
+        case kGlow:
             concrete_filter_ = new GlowFilter;
             break;
-        case FILTER_BEVEL:
+        case kBevel:
             concrete_filter_ = new BevelFilter;
             break;
-        case FILTER_GRADIENTGLOW:
+        case kGradientGlow:
             concrete_filter_ = new GradientGlowFilter;
             break;
-        case FILTER_CONVOLUTION:
+        case kConvolution:
             concrete_filter_ = new ConvolutionFilter;
             break;
-        case FILTER_COLORMATRIX:
+        case kColorMatrix:
             concrete_filter_ = new ColorMatrixFilter;
             break;
-        case FILTER_GRADIENTBEVEL:
+        case kGradientBevel:
             concrete_filter_ = new GradientBevelFilter;
             break;
     }

@@ -26,7 +26,7 @@ void swf::SWFHeader::continueWith(buf_type *& buf) {
     _frameRate.fromSWF(buf);
     _frameCount.fromSWF(buf);
 
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("SWFHeader\n");
     printf("\t%i compressed\n", _compressed);
     printf("\t%i version\n", version__.value());
@@ -69,7 +69,7 @@ swf::U16 swf::SWFHeader::frameCount() {
 //             1 ShowFrame
 //-----------------------------------------
 void swf::ShowFrame::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf(" 1 ShowFrame\n");
 #endif
 }
@@ -80,7 +80,7 @@ void swf::ShowFrame::fromSWF(buf_type *& buf) {
 void swf::SetBackgroundColor::fromSWF(buf_type *& buf) {
     color.fromSWF(buf);
 
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf(" 9 SetBackgroundColor\n");
 #endif
 
@@ -115,7 +115,7 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
     if( hasClipDepth )      clipDepth.fromSWF(buf);
     if( hasClipActions )    clipActions.fromSWF(buf);
 
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("26 PlaceObject2\n");
     printf("\t%i hasClipActions\n",    hasClipActions);
     printf("\t%i hasClipDepth\n",      hasClipDepth);
@@ -132,7 +132,7 @@ void swf::PlaceObject2::fromSWF(buf_type *& buf) {
 //             56 ExportAssets
 //-----------------------------------------
 void swf::ExportAssets::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("56 ExportAssets\n");
 #endif
     tagsFromSWF(buf);
@@ -142,7 +142,7 @@ void swf::ExportAssets::fromSWF(buf_type *& buf) {
 //             57 ImportAssets
 //-----------------------------------------
 void swf::ImportAssets::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("57 ImportAssets\n");
 #endif
     url.fromSWF(buf);
@@ -161,7 +161,7 @@ void swf::FileAttributes::fromSWF(buf_type *& buf) {
 
     buf += 4;
 
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("69 FileAttributes\n");
     printf("\t%i useDirectBlit\n", _useDirectBlit);
     printf("\t%i useGPU\n",        _useGPU);
@@ -210,7 +210,7 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
     if( hasCacheAsBitmap ) bitmapCache.fromSWF(buf);
     if( hasClipActions ) clipActions.fromSWF(buf);
 
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("70 PlaceObject3\n");
     printf("\t%i hasClipActions\n",    hasClipActions);
     printf("\t%i hasClipDepth\n",      hasClipDepth);
@@ -232,7 +232,7 @@ void swf::PlaceObject3::fromSWF(buf_type *& buf) {
 //             71 ImportAssets2
 //-----------------------------------------
 void swf::ImportAssets2::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("71 ImportAssets2\n");
 #endif
     
@@ -245,7 +245,7 @@ void swf::ImportAssets2::fromSWF(buf_type *& buf) {
 //             76 SymbolClass
 //-----------------------------------------
 void swf::SymbolClass::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("76 SymbolClass\n");
 #endif
     
@@ -256,7 +256,7 @@ void swf::SymbolClass::fromSWF(buf_type *& buf) {
 //           78 DefineScalingGrid
 //-----------------------------------------
 void swf::DefineScalingGrid::fromSWF(buf_type *& buf) {
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("78 DefineScalingGrid\n");
 #endif
 

@@ -248,14 +248,14 @@ namespace swf {
     //-----------------------------------------
     class Filter : public AbstractData {
     public:
-        unsigned short static const FILTER_DROPSHADOW    = 0;
-        unsigned short static const FILTER_BLUR          = 1;
-        unsigned short static const FILTER_GLOW          = 2;
-        unsigned short static const FILTER_BEVEL         = 3;
-        unsigned short static const FILTER_GRADIENTGLOW  = 4;
-        unsigned short static const FILTER_CONVOLUTION   = 5;
-        unsigned short static const FILTER_COLORMATRIX   = 6;
-        unsigned short static const FILTER_GRADIENTBEVEL = 7;
+        unsigned short static const kDropShadow    = 0;
+        unsigned short static const kBlur          = 1;
+        unsigned short static const kGlow          = 2;
+        unsigned short static const kBevel         = 3;
+        unsigned short static const kGradientGlow  = 4;
+        unsigned short static const kConvolution   = 5;
+        unsigned short static const kColorMatrix   = 6;
+        unsigned short static const kGradientBevel = 7;
         
         U8 filter_id_;
         AbstractData * concrete_filter_;

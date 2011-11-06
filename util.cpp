@@ -34,7 +34,7 @@ unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt)
         
         t = *buf >> pos;
         
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
         //printf("%i", t & 1);
 #endif
         
@@ -42,7 +42,7 @@ unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt)
         ret |= t & 1;
     } while (++i < n);
     
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     //printf("\n");
 #endif
     

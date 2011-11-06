@@ -280,7 +280,7 @@ void swf::RECT::fromSWF( buf_type *& buf ) {
     
     buf += (unsigned) ceil( (5 + (nBits * i)) / (sizeof(*buf) * 8.0f) );
     
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     printf("i: %i\n", i);
     printf("nBits: %i\n", nBits);
     printf("xMin: %i\n", xMin.toPX());
@@ -358,7 +358,7 @@ void swf::MATRIX::fromSWF(buf_type *& buf) {
     
     buf += (unsigned) ceil(offset / (sizeof(*buf) * 8.0f));
     
-#ifdef DEBUG
+#ifdef LIBSWF_DEBUG
     /*
      printf("\t\tMATRIX\n");
      printf("\t\t\t%i hasScale\n", hasScale);
