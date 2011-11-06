@@ -455,3 +455,47 @@ void swf::CXFORMWITHALPHA::fromSWF(buf_type *& buf) {
     
     buf += (unsigned) ceil(i / (sizeof(*buf) * 8.0f));
 }
+
+//-----------------------------------------
+//                RecordHeader
+//-----------------------------------------
+void swf::RecordHeader::fromSWF( buf_type *& buf ) {
+    tagCodeAndLength.fromSWF(buf);
+    
+    tag = (tagCodeAndLength.getValue() >> 6) & 0x3ff;
+    
+    /*
+     check the last 6 bits of U16
+     All 1's means this is a long header
+     */
+    
+    unsigned int shortLen = tagCodeAndLength.getValue() & 0x3f;
+    if ( shortLen == 0x3f ) {
+        isShort = false;
+        tagLength.fromSWF( buf );
+    } else {
+        isShort = true;
+        tagLength.setValue( shortLen );
+    }
+}
+
+short int swf::RecordHeader::type() {
+    return tag;
+}
+
+unsigned swf::RecordHeader::length() {
+    return tagLength.getValue();
+}
+
+
+//-----------------------------------------
+//                AbstractTag
+//-----------------------------------------
+swf::AbstractTag::~AbstractTag() {}
+
+//-----------------------------------------
+//                AbstractVTag
+//-----------------------------------------
+swf::AbstractVTag::AbstractVTag(Version & version) : VersionRequirement(version) {}
+
+swf::AbstractVTag::~AbstractVTag() {}

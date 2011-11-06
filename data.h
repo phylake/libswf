@@ -248,7 +248,41 @@ namespace swf {
     public:
         virtual void fromSWF( buf_type *& buf );
     };
-
+    
+    //-----------------------------------------
+    //               RecordHeader
+    //-----------------------------------------
+    class RecordHeader {
+        U16 tagCodeAndLength;
+        U32 tagLength;
+        short int tag;
+        bool isShort;
+    public:
+        virtual void fromSWF( buf_type *& buf );
+        short int type();
+        unsigned int length();
+    };
+    
+    //-----------------------------------------
+    //                AbstractTag
+    //-----------------------------------------
+    class AbstractTag : public AbstractBase {
+    protected:
+        //DISALLOW_COPY_AND_ASSIGN(AbstractTag)
+        buf_type * _buffer;
+    public:
+        RecordHeader * recordHeader;
+        virtual ~AbstractTag() = 0;
+    };
+    
+    //-----------------------------------------
+    //               AbstractVTag
+    //-----------------------------------------
+    class AbstractVTag : public AbstractTag, protected VersionRequirement {
+    public:
+        AbstractVTag(Version & version);
+        virtual ~AbstractVTag() = 0;
+    };
 }
 
-#endif
+#endif //libswf_data_h
