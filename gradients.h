@@ -12,28 +12,67 @@
 #include "data.h"
 
 namespace swf {
+    namespace gradients {
+        enum kGradientSpreadMode
+        {
+            PAD,
+            REFLECT,
+            REPEAT/*,
+            RESERVED*/
+        };
+        
+        enum kGradientInterpolationMode
+        {
+            NORMAL,
+            LINEAR/*,
+            RESERVED,
+            RESERVED*/
+        };
+    }
+    
     //-----------------------------------------
-    //                  GradRecord
+    //                GradRecord
     //-----------------------------------------
     class GradRecord : public AbstractData {
-        short int shape_;
+        short shape_context_;
         
         U8 ratio_;
         RGB color3_;//Shape3
         RGB color12_;//Shape1 and Shape2
     public:
-        GradRecord(int shape);
+        GradRecord();
         virtual void fromSWF( buf_type *& buf );
+        
+        void set_shape_context(short value);
     };
     
     //-----------------------------------------
-    //                  Gradient
+    //                Gradient
     //-----------------------------------------
-    class Gradient : public AbstractVData {
+    class Gradient : public AbstractData {
+    protected:
+        short shape_context_;
+        
         char spread_mode_;
+        char interpolation_mode_;
+        char num_gradients_;
+        std::vector<GradRecord *> records_;
+        
     public:
-        Gradient(Version & version);
         virtual void fromSWF( buf_type *& buf );
+        
+        void set_shape_context(short value);
+    };
+    
+    //-----------------------------------------
+    //             FocalGradient
+    //-----------------------------------------
+    class FocalGradient : public Gradient {
+        U16 focal_point_;
+    public:
+        virtual void fromSWF( buf_type *& buf );
+        
+        double focal_point();
     };
 }
 

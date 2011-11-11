@@ -10,15 +10,25 @@
 #define libswf_shapes_h
 
 #include "data.h"
+#include "gradients.h"
 
 namespace swf {
+    
     //-----------------------------------------
     //                  FillStyle
     //-----------------------------------------
     class FillStyle : public AbstractVData {
+        short shape_context_;
+        
         U8 fill_style_type_;
         RGB color3_;//Shape3
         RGB color12_;//Shape1 and Shape2
+        MATRIX gradient_matrix_;
+        Gradient gradient_;
+        FocalGradient gradient_focal_;
+        U16 bitmap_id_;
+        MATRIX bitmap_matrix_;
+        
     public:
         unsigned short static const SOLID                       = 0x00;
         unsigned short static const LINEAR_GRADIENT             = 0x10;
@@ -29,8 +39,25 @@ namespace swf {
         unsigned short static const NON_SMOOTH_REPEATING_BITMAP = 0x42;
         unsigned short static const NON_SMOOTH_CLIPPED_BITMAP   = 0x43;
         
-        FillStyle(Version & version);
+        FillStyle(Version & version, short shape_context);
         virtual void fromSWF( buf_type *& buf );
+        
+        void set_shape_context(short value);
+    };
+    
+    //-----------------------------------------
+    //              FillStyleArray
+    //-----------------------------------------
+    class FillStyleArray : public AbstractData {
+        short shape_context_;
+        
+        U8 count_;
+        U16 count_ext_;
+        std::vector<FillStyle *> styles_;
+    public:
+        virtual void fromSWF( buf_type *& buf );
+        
+        void set_shape_context(short value);
     };
 }
 
