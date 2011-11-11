@@ -9,9 +9,9 @@
 #ifndef libswf_swf_h
 #define libswf_swf_h
 
-#include <stdio.h>
-#include <vector.h>
-#include "math.h"
+#include <iostream>
+#include <vector>
+#include <math.h>
 
 #include "libswf.h"
 #include "util.h"
