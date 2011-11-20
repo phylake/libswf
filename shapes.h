@@ -15,14 +15,27 @@
 namespace swf {
     
     //-----------------------------------------
-    //                  FillStyle
+    //                  LineStyle
     //-----------------------------------------
-    class FillStyle : public AbstractVData {
+    class LineStyle : public AbstractVData {
+    protected:
         short shape_context_;
         
-        U8 fill_style_type_;
         RGB color3_;//Shape3
         RGB color12_;//Shape1 and Shape2
+        
+    public:
+        LineStyle(Version & version, short shape_context);
+        virtual void fromSWF( buf_type *& buf );
+        
+        virtual void set_shape_context(short value);
+    };
+    
+    //-----------------------------------------
+    //                  FillStyle
+    //-----------------------------------------
+    class FillStyle : public LineStyle {
+        U8 fill_style_type_;
         MATRIX gradient_matrix_;
         Gradient gradient_;
         FocalGradient gradient_focal_;
@@ -42,23 +55,25 @@ namespace swf {
         FillStyle(Version & version, short shape_context);
         virtual void fromSWF( buf_type *& buf );
         
-        void set_shape_context(short value);
+        virtual void set_shape_context(short value);
     };
     
     //-----------------------------------------
     //              FillStyleArray
     //-----------------------------------------
-    class FillStyleArray : public AbstractData {
+    class FillStyleArray : public AbstractVData {
         short shape_context_;
         
         U8 count_;
         U16 count_ext_;
         std::vector<FillStyle *> styles_;
     public:
+        FillStyleArray(Version & version, short shape_context);
         virtual void fromSWF( buf_type *& buf );
         
         void set_shape_context(short value);
     };
+    
 }
 
 #endif //libswf_shapes_h
