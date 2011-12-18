@@ -14,6 +14,7 @@
 #include "libswf.h"
 #include "math.h"
 #include "util.h"
+#include "bitutil.h"
 
 namespace swf {
     //----------------------------------------------------

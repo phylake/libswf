@@ -9,11 +9,21 @@
 #include "shapes.h"
 
 //-----------------------------------------
+//               ShapeBase
+//-----------------------------------------
+swf::ShapeBase::ShapeBase(Version & version, short shape_context) : AbstractVData(version) {}
+
+void swf::ShapeBase::set_shape_context(short value) {
+    if( !(value >= 1 && 3 <= value) ) return;
+    
+    shape_context_ = value;
+}
+
+//-----------------------------------------
 //                  LineStyle
 //-----------------------------------------
 swf::LineStyle::LineStyle(Version & version, short shape_context) :
-    AbstractVData(version),
-    shape_context_(shape_context),
+    ShapeBase(version, shape_context),
     color3_(swf::RGB::TYPE_RGBA),
     color12_(swf::RGB::TYPE_RGB) {}
 
@@ -21,20 +31,10 @@ void swf::LineStyle::fromSWF( buf_type *& buf ) {
     
 }
 
-void swf::LineStyle::set_shape_context(short value) {
-    if( !(value >= 1 && 3 <= value) ) return;
-    
-    shape_context_ = value;
-}
-
 //-----------------------------------------
 //                  FillStyle
 //-----------------------------------------
-swf::FillStyle::FillStyle(Version & version, short shape_context) :
-    LineStyle(version, shape_context)/*,
-    shape_context_(shape_context),
-    color3_(swf::RGB::TYPE_RGBA),
-    color12_(swf::RGB::TYPE_RGB)*/ {}
+swf::FillStyle::FillStyle(Version & version, short shape_context) : LineStyle(version, shape_context) {}
 
 void swf::FillStyle::fromSWF( buf_type *& buf ) {
     fill_style_type_.fromSWF(buf);
@@ -81,11 +81,70 @@ void swf::FillStyle::set_shape_context(short value) {
 }
 
 //-----------------------------------------
+//                  LineStyle2
+//-----------------------------------------
+swf::LineStyle2::LineStyle2(Version & version, short shape_context) :
+    LineStyle(version, shape_context),
+    fill_type_(version, shape_context) {}
+
+void swf::LineStyle2::fromSWF( buf_type *& buf ) {
+    width_.fromSWF(buf);
+    b0 = *buf;
+    b1 = *(buf + 1);
+    
+    buf += 2;
+    
+    if( join_style() == kJoinStyleMiter )
+    {
+        miter_limit_factor_.fromSWF(buf);
+    }
+    
+    if ( has_fill() )
+    {
+        fill_type_.fromSWF(buf);
+    }
+    else
+    {
+        color3_.fromSWF(buf);
+    }
+}
+
+short swf::LineStyle2::start_cap_style() {
+    return (b0 >> 6) & 0x3;
+}
+
+short swf::LineStyle2::join_style() {
+    return (b0 >> 4) & 0x3;
+}
+
+short swf::LineStyle2::endcap_style() {
+    return b1 & 0x3;
+}
+
+bool swf::LineStyle2::has_fill() {
+    return b0 & 0x8;
+}
+
+bool swf::LineStyle2::no_h_scale() {
+    return b0 & 0x4;
+}
+
+bool swf::LineStyle2::no_v_scale() {
+    return b0 & 0x2;
+}
+
+bool swf::LineStyle2::pixel_hinting() {
+    return b0 & 0x1;
+}
+
+bool swf::LineStyle2::no_close() {
+    return b1 & 0x4;
+}
+
+//-----------------------------------------
 //              FillStyleArray
 //-----------------------------------------
-swf::FillStyleArray::FillStyleArray(Version & version, short shape_context) :
-    AbstractVData(version),
-    shape_context_(shape_context) {}
+swf::FillStyleArray::FillStyleArray(Version & version, short shape_context) : ShapeBase(version, shape_context) {}
 
 void swf::FillStyleArray::fromSWF( buf_type *& buf ) {
     count_.fromSWF(buf);
@@ -105,4 +164,50 @@ void swf::FillStyleArray::fromSWF( buf_type *& buf ) {
         styles_.push_back(fs);
     }
 }
+
+//-----------------------------------------
+//              LineStyleArray
+//-----------------------------------------
+swf::LineStyleArray::LineStyleArray(Version & version, short shape_context) : ShapeBase(version, shape_context) {}
+
+void swf::LineStyleArray::fromSWF( buf_type *& buf ) {
+    count_.fromSWF(buf);
+    
+    short actual_count = (short) count_.value();
+    if( count_.value() == 0xff )
+    {
+        count_ext_.fromSWF(buf);
+        actual_count = (short) count_ext_.value();
+    }
+    
+    LineStyle * ls;
+    while( actual_count-- )
+    {
+        switch (shape_context_) {
+            case 4:
+                ls = new LineStyle2(version_, shape_context_);
+                break;
+            case 3:
+            case 2:
+            case 1:
+                ls = new LineStyle(version_, shape_context_);
+            default:
+                break;
+        }
+        ls -> fromSWF(buf);
+        styles_.push_back(ls);
+    }
+}
+
+//-----------------------------------------
+//                 Shape
+//-----------------------------------------
+swf::Shape::Shape(Version & version, short shape_context) : ShapeBase(version, shape_context) {}
+
+void swf::Shape::fromSWF( buf_type *& buf ) {
+    
+}
+
+
+
 
