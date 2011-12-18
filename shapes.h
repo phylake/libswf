@@ -23,7 +23,7 @@ namespace swf {
     public:
         ShapeBase(Version & version, short shape_context);
         
-        virtual void set_shape_context(short value);
+        virtual int set_shape_context(short value);
     };
     
     //-----------------------------------------
@@ -64,7 +64,7 @@ namespace swf {
         FillStyle(Version & version, short shape_context);
         
         virtual void fromSWF( buf_type *& buf );
-        virtual void set_shape_context(short value);
+        virtual int set_shape_context(short value);
     };
     
     //-----------------------------------------
@@ -93,6 +93,7 @@ namespace swf {
         
         U16 miter_limit_factor_;
         FillStyle fill_type_;
+    
     public:
         static const short kJoinStyleRound = 0;
         static const short kJoinStyleBevel = 1;
@@ -123,6 +124,7 @@ namespace swf {
         U8 count_;
         U16 count_ext_;
         std::vector<FillStyle *> styles_;
+    
     public:
         FillStyleArray(Version & version, short shape_context);
         
@@ -133,11 +135,10 @@ namespace swf {
     //              LineStyleArray
     //-----------------------------------------
     class LineStyleArray : public ShapeBase {
-        short shape_context_;
-        
         U8 count_;
         U16 count_ext_;
         std::vector<LineStyle *> styles_;
+    
     public:
         LineStyleArray(Version & version, short shape_context);
         

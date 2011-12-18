@@ -13,10 +13,11 @@
 //-----------------------------------------
 swf::ShapeBase::ShapeBase(Version & version, short shape_context) : AbstractVData(version) {}
 
-void swf::ShapeBase::set_shape_context(short value) {
-    if( !(value >= 1 && 3 <= value) ) return;
+int swf::ShapeBase::set_shape_context(short value) {
+    if( !(1 >= value && value <= 3) ) return -1;
     
     shape_context_ = value;
+    return 0;
 }
 
 //-----------------------------------------
@@ -72,12 +73,18 @@ void swf::FillStyle::fromSWF( buf_type *& buf ) {
     }
 }
 
-void swf::FillStyle::set_shape_context(short value) {
-    if( !(value >= 1 && 3 <= value) ) return;
+int swf::FillStyle::set_shape_context(short value) {
+    int ret = ShapeBase::set_shape_context(value);
+    if( ret != 0 )
+    {
+        return ret;
+    }
     
     shape_context_ = value;
     gradient_.set_shape_context(value);
     gradient_focal_.set_shape_context(value);
+    
+    return ret;
 }
 
 //-----------------------------------------
