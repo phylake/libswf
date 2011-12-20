@@ -16,9 +16,7 @@
 namespace swf
 {
     unsigned getUBits(buf_type * ptr, unsigned int n, unsigned int startAt = 0);
-    unsigned getUBits(    char * ptr, unsigned int n, unsigned int startAt = 0);
       signed getSBits(buf_type * ptr, unsigned int n, unsigned int startAt = 0);
-      signed getSBits(    char * ptr, unsigned int n, unsigned int startAt = 0);
 }
 
 #endif //libswf_util_h

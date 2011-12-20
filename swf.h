@@ -35,6 +35,7 @@ namespace swf {
         RECT _frameSize;
         U16 _frameRate;
         U16 _frameCount;
+    
     public:
         virtual void fromSWF(buf_type *& buf);
         void continueWith(buf_type *& buf);
@@ -221,7 +222,7 @@ namespace swf {
         buf_type ** _buffer;
     public:
         SWFHeader header;
-
+        
         virtual void fromSWF(buf_type *& buf);
         void continueWith(buf_type *& buf);
 

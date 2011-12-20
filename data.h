@@ -259,7 +259,7 @@ namespace swf {
         short int tag;
         bool isShort;
     public:
-        virtual void fromSWF( buf_type *& buf );
+        void fromSWF( buf_type *& buf );
         short int type();
         unsigned int length();
     };

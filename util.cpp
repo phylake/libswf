@@ -49,10 +49,6 @@ unsigned int swf::getUBits(buf_type * buf, unsigned int n, unsigned int startAt)
     return ret;
 }
 
-unsigned int swf::getUBits(char * buf, unsigned int n, unsigned int startAt) {
-    return getUBits((buf_type *)buf, n, startAt);
-}
-
 signed int swf::getSBits(buf_type * buf, unsigned int n, unsigned int startAt) {
     unsigned int ret = getUBits(buf, n, startAt);
     
@@ -62,8 +58,4 @@ signed int swf::getSBits(buf_type * buf, unsigned int n, unsigned int startAt) {
     }
     
     return ret;
-}
-
-signed int swf::getSBits(char * buf, unsigned int n, unsigned int startAt) {
-    return getSBits((buf_type *)buf, n, startAt);
 }
