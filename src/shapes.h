@@ -52,14 +52,14 @@ namespace swf {
         MATRIX bitmap_matrix_;
         
     public:
-        unsigned short static const SOLID                       = 0x00;
-        unsigned short static const LINEAR_GRADIENT             = 0x10;
-        unsigned short static const RADIAL_GRADIENT             = 0x12;
-        unsigned short static const FOCAL_RADIAL_GRADIENT       = 0x13;
-        unsigned short static const REPEATING_BITMAP            = 0x40;
-        unsigned short static const CLIPPED_BITMAP              = 0x41;
-        unsigned short static const NON_SMOOTH_REPEATING_BITMAP = 0x42;
-        unsigned short static const NON_SMOOTH_CLIPPED_BITMAP   = 0x43;
+        static const unsigned short SOLID                       = 0x00;
+        static const unsigned short LINEAR_GRADIENT             = 0x10;
+        static const unsigned short RADIAL_GRADIENT             = 0x12;
+        static const unsigned short FOCAL_RADIAL_GRADIENT       = 0x13;
+        static const unsigned short REPEATING_BITMAP            = 0x40;
+        static const unsigned short CLIPPED_BITMAP              = 0x41;
+        static const unsigned short NON_SMOOTH_REPEATING_BITMAP = 0x42;
+        static const unsigned short NON_SMOOTH_CLIPPED_BITMAP   = 0x43;
         
         FillStyle(Version & version, short shape_context);
         

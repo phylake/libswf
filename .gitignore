@@ -1,16 +1,23 @@
+; mac
 .DS_Store
 
+; sample input/generation files
 *.swf
 *.fla
 
+; project files
 *.xcodeproj
 *.tmproj
+*.sublime*
 
 *.1
 *.o
 *.gch
 
+; ragel
 *.dot
 
 build
 DerivedData
+
+swf.rb
