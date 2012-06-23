@@ -35,9 +35,9 @@ void swf::TagNameBase::tagsFromSWF(buf_type *& buf) {
         tag = tags[i];
         name = names[i];
         
-        printf("\t%i ", (int)tag->value());
+        /*printf("\t%i ", (int)tag->value());
         printf(name->value_.data());
-        printf("\n");
+        printf("\n");*/
     }
 #endif
 }
